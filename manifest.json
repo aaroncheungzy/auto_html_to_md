@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "网页转Markdown (含批量转换)",
+  "version": "1.0.0",
+  "description": "将网页/选区转换为Markdown；支持批量转换选区内所有链接的文档（可分别下载或合并为一个文件下载）。",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    },
+    "default_title": "网页转Markdown"
+  },
+  "permissions": [
+    "activeTab",
+    "contextMenus",
+    "storage",
+    "downloads",
+    "scripting",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["lib/Readability.js", "lib/turndown.js", "lib/turndown-plugin-gfm.js", "utils/converter.js", "content/content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "commands": {
+    "convert-page": {
+      "suggested_key": { "default": "Alt+Shift+M" },
+      "description": "转换当前页面为Markdown"
+    },
+    "convert-selection": {
+      "suggested_key": { "default": "Alt+Shift+S" },
+      "description": "转换选区为Markdown"
+    },
+    "batch-convert-selection": {
+      "description": "批量转换选区内链接 (需先选中区域)"
+    }
+  }
+}

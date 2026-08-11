@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>网页转 Markdown</title>
+  <link rel="stylesheet" href="../styles/styles.css">
+</head>
+<body class="popup-body">
+  <div class="popup">
+    <header class="popup-header">
+      <img src="../icons/icon48.png" alt="logo" class="logo" />
+      <div>
+        <h1>网页转 Markdown</h1>
+        <p class="subtitle">单页 / 选定区域 / 批量链接</p>
+      </div>
+    </header>
+
+    <div class="actions">
+      <button id="btn-page" class="btn btn-primary">
+        <span class="icon">📄</span>
+        <span class="label">转换当前页面</span>
+      </button>
+      <button id="btn-selection" class="btn">
+        <span class="icon">✂️</span>
+        <span class="label">转换选定区域</span>
+      </button>
+      <button id="btn-batch" class="btn btn-accent">
+        <span class="icon">📦</span>
+        <span class="label">批量转换选区链接</span>
+        <span class="badge">先框选区域</span>
+      </button>
+    </div>
+
+    <label class="check popup-check">
+      <input type="checkbox" id="bundle-images" checked />
+      <span>打包为 ZIP（Markdown + 图片，单次下载）</span>
+    </label>
+
+    <footer class="popup-footer">
+      <span id="status" class="status status-ready">就绪</span>
+      <span class="version" id="version"></span>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

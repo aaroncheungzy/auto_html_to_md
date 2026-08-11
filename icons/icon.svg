@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Background -->
+  <rect width="128" height="128" rx="24" fill="#135BEC"/>
+
+  <!-- Markdown Icon -->
+  <g transform="translate(24, 24)">
+    <!-- Document shape -->
+    <path d="M16 0H64L80 16V80H16V0Z" fill="white" opacity="0.2"/>
+    <path d="M16 0H56L80 24V80H16V0Z" fill="white"/>
+
+    <!-- HTML brackets -->
+    <path d="M28 40L20 48L28 56" stroke="#135BEC" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M68 40L76 48L68 56" stroke="#135BEC" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+    <!-- Arrow -->
+    <path d="M36 56L44 48L36 40" stroke="#135BEC" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M44 48H52" stroke="#135BEC" stroke-width="4" stroke-linecap="round" fill="none"/>
+
+    <!-- MD text -->
+    <text x="48" y="72" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#135BEC" text-anchor="middle">MD</text>
+  </g>
+</svg>

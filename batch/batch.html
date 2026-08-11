@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>批量转换为 Markdown</title>
+  <link rel="stylesheet" href="../styles/styles.css">
+</head>
+<body class="batch-body">
+  <div class="batch-container">
+    <header class="batch-header">
+      <h1>📦 批量转换选区链接</h1>
+      <p class="muted">抓取选区内每个链接的页面并转为 Markdown，可分别下载或合并为一个文件。</p>
+    </header>
+
+    <!-- 步骤 1：链接列表 -->
+    <section id="step-links" class="card">
+      <div class="card-head">
+        <h2>第 1 步：选择要转换的链接</h2>
+        <div class="card-actions">
+          <label class="check"><input type="checkbox" id="select-all" checked /> 全选</label>
+          <button id="btn-refresh" class="link-btn">🔄 重新读取选区</button>
+          <button id="btn-pick" class="link-btn">🎯 框选区域拾取</button>
+        </div>
+      </div>
+      <div id="link-list" class="link-list"></div>
+      <div id="picker-status" class="picker-status" hidden></div>
+      <div id="empty-state" class="empty-state" hidden>
+        <p id="empty-text"></p>
+        <button id="btn-pick-empty" class="btn btn-accent" style="margin-top:10px">
+          <span class="icon">🎯</span><span class="label">改用框选区域拾取链接</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 步骤 2：选项 -->
+    <section id="step-options" class="card">
+      <h2>第 2 步：输出方式</h2>
+      <div class="options">
+        <label class="radio"><input type="radio" name="mode" value="separate" checked /> <span><b>分别下载</b> - 每个链接一个 .md 文件</span></label>
+        <label class="radio"><input type="radio" name="mode" value="combined" /> <span><b>合并为一个文件</b> - 所有内容合并后下载单个 .md</span></label>
+      </div>
+      <div class="options" style="margin-top:12px">
+        <label class="check"><input type="checkbox" id="add-source" checked /> 每篇添加标题与来源链接</label>
+        <label class="check"><input type="checkbox" id="auto-download" /> 完成后自动下载（合并模式自动下载合并文件）</label>
+        <label class="check"><input type="checkbox" id="keep-images" /> 保留所有图片（含图标/装饰）</label>
+        <label class="check"><input type="checkbox" id="bundle-images" checked /> 打包为 ZIP（Markdown + 图片，单次下载）</label>
+      </div>
+      <button id="btn-start" class="btn btn-accent" style="margin-top:14px;width:100%">
+        <span class="icon">▶</span><span class="label">开始批量转换</span>
+      </button>
+    </section>
+
+    <!-- 步骤 3：进度 -->
+    <section id="step-progress" class="card" hidden>
+      <h2>第 3 步：转换进度</h2>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+        <span id="progress-text" class="progress-text">0 / 0</span>
+      </div>
+      <div id="status-list" class="status-list"></div>
+    </section>
+
+    <!-- 步骤 4：结果 -->
+    <section id="step-results" class="card" hidden>
+      <div class="card-head">
+        <h2>第 4 步：完成</h2>
+        <div class="card-actions" id="result-actions"></div>
+      </div>
+      <div id="result-summary" class="result-summary"></div>
+      <div id="combined-preview" class="combined-preview" hidden>
+        <div class="tabs">
+          <button class="tab active" data-tab="raw">Markdown 源码</button>
+          <button class="tab" data-tab="rendered">渲染预览</button>
+        </div>
+        <pre id="combined-raw" class="combined-raw"></pre>
+        <div id="combined-rendered" class="combined-rendered markdown-body" hidden></div>
+      </div>
+    </section>
+  </div>
+
+  <script src="../lib/marked.min.js"></script>
+  <script src="../lib/jszip.min.js"></script>
+  <script src="../utils/imageBundle.js"></script>
+  <script src="batch.js"></script>
+</body>
+</html>
