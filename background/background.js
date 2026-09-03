@@ -7,7 +7,7 @@
     showPreview: true,
     autoCopy: false,
     autoDownload: false,
-    batchConcurrency: 1,
+    batchConcurrency: 4,
     batchTimeoutMs: 20000,
     keepAllImages: false,
     bundleImages: true
@@ -329,6 +329,13 @@
     return res.data; // { markdown, title }
   }
 
+  async function extractHtmlLinksViaOffscreen(html, url) {
+    await ensureOffscreen();
+    const res = await chrome.runtime.sendMessage({ type: 'EXTRACT_HTML_LINKS', payload: { html, url } });
+    if (!res || !res.success) throw new Error((res && res.error) || '离屏链接提取失败');
+    return res.data.links || [];
+  }
+
   async function fetchHtml(url, timeoutMs) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs || 20000);
@@ -445,6 +452,20 @@
     return await convertViaTab(url, timeoutMs, returnToTabId);
   }
 
+  async function expandDirectoryLinks(urls, timeoutMs) {
+    const results = [];
+    for (const url of urls || []) {
+      try {
+        const html = await fetchHtml(url, timeoutMs);
+        const links = await extractHtmlLinksViaOffscreen(html, url);
+        results.push({ url, links, error: null });
+      } catch (err) {
+        results.push({ url, links: [], error: err.message || String(err) });
+      }
+    }
+    return results;
+  }
+
   /* ---------------- 单次转换结果处理 ---------------- */
   async function handleConversionResult(tab, markdown, source) {
     const settings = await getSettings();
@@ -533,7 +554,7 @@
     if (mode === 'combined') {
       combinedMarkdown = results
         .filter((r) => r && r.markdown)
-        .map((r) => formatWithSource(r.markdown, r.title, r.url))
+        .map((r) => addSourceInfo ? formatWithSource(r.markdown, r.title, r.url) : r.markdown)
         .join('\n\n---\n\n');
     }
 
@@ -667,6 +688,12 @@
               sendResponse({ success: false, error: e.message || String(e) });
             }
             break;
+          }
+          case 'EXPAND_DIRECTORY_LINKS': {
+            const urls = (msg.payload && msg.payload.urls) || [];
+            const timeoutMs = (msg.payload && msg.payload.timeoutMs) || 20000;
+            const data = await expandDirectoryLinks(urls, timeoutMs);
+            sendResponse({ success: true, data }); break;
           }
           case 'DOWNLOAD_FILE':
             await downloadText(msg.payload.content, msg.payload.filename);

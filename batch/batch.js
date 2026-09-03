@@ -11,6 +11,7 @@
   let port = null;
   let myTabId = null;
   let imgCache = new Map(); // 批量内跨页面图片去重：url -> 本地文件名
+  const EXPANSION_MAX_LINKS = 100;
 
   /* ---------- 工具 ---------- */
   function sanitizeTitle(title) {
@@ -175,6 +176,41 @@
     }
   }
 
+  async function expandSelectedDirectories() {
+    const selected = getSelectedLinks();
+    if (!selected.length) { alert('请先勾选至少一个目录链接'); return; }
+    const button = $('btn-expand');
+    button.disabled = true;
+    setPickerStatus(`正在展开 ${selected.length} 个目录（同域一层）…`);
+    try {
+      const res = await chrome.runtime.sendMessage({
+        type: 'EXPAND_DIRECTORY_LINKS',
+        payload: { urls: selected.map((link) => link.url), timeoutMs: 20000 }
+      });
+      if (!res || !res.success) throw new Error((res && res.error) || '目录展开失败');
+
+      let added = 0;
+      let limitReached = false;
+      const failures = [];
+      (res.data || []).forEach((entry) => {
+        const merged = window.LinkExpansion.mergeExpandedLinks(links, entry.links, entry.url, EXPANSION_MAX_LINKS);
+        links = merged.links;
+        added += merged.added;
+        limitReached = limitReached || merged.limitReached;
+        if (entry.error) failures.push(entry.url);
+      });
+      renderLinks();
+      $('btn-start').disabled = !links.length;
+      setPickerStatus(`目录展开完成：新增 ${added} 个链接，当前共 ${links.length} 个。` +
+        (limitReached ? ` 已达到 ${EXPANSION_MAX_LINKS} 个链接上限。` : '') +
+        (failures.length ? ` ${failures.length} 个目录无法读取。` : ''));
+    } catch (e) {
+      setPickerStatus('目录展开失败：' + e.message);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   // 接收来自页面拾取器的消息
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'LINKS_PICKED') {
@@ -214,7 +250,7 @@
     port.onDisconnect.addListener(() => { /* 端口断开兜底 */ });
     port.postMessage({
       type: 'START',
-      data: { urls: selected.map((l) => l.url), mode, addSourceInfo, concurrency: 1, timeoutMs: 20000 }
+      data: { urls: selected.map((l) => l.url), mode, addSourceInfo, concurrency: 4, timeoutMs: 20000 }
     });
   }
 
@@ -408,6 +444,7 @@
   $('btn-refresh').addEventListener('click', loadLinks);
   $('btn-pick').addEventListener('click', startPicker);
   $('btn-pick-empty').addEventListener('click', startPicker);
+  $('btn-expand').addEventListener('click', expandSelectedDirectories);
   $('select-all').addEventListener('change', () => {
     document.querySelectorAll('.link-check').forEach((c) => (c.checked = $('select-all').checked));
   });

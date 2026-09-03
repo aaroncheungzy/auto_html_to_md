@@ -21,6 +21,7 @@
           <label class="check"><input type="checkbox" id="select-all" checked /> 全选</label>
           <button id="btn-refresh" class="link-btn">🔄 重新读取选区</button>
           <button id="btn-pick" class="link-btn">🎯 框选区域拾取</button>
+          <button id="btn-expand" class="link-btn">↳ 展开已选目录</button>
         </div>
       </div>
       <div id="link-list" class="link-list"></div>
@@ -41,6 +42,7 @@
         <label class="radio"><input type="radio" name="mode" value="combined" /> <span><b>合并为一个文件</b> - 所有内容合并后下载单个 .md</span></label>
       </div>
       <div class="options" style="margin-top:12px">
+        <span class="muted">目录展开：仅同域且严格位于目录路径下，展开一层，最多 100 个链接。</span>
         <label class="check"><input type="checkbox" id="add-source" checked /> 每篇添加标题与来源链接</label>
         <label class="check"><input type="checkbox" id="auto-download" /> 完成后自动下载（合并模式自动下载合并文件）</label>
         <label class="check"><input type="checkbox" id="keep-images" /> 保留所有图片（含图标/装饰）</label>
@@ -82,6 +84,7 @@
   <script src="../lib/marked.min.js"></script>
   <script src="../lib/jszip.min.js"></script>
   <script src="../utils/imageBundle.js"></script>
+  <script src="../utils/linkExpansion.js"></script>
   <script src="batch.js"></script>
 </body>
 </html>
