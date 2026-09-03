@@ -1,3 +1,5 @@
+importScripts('utils/htmlQuality.js');
+
 /* background/background.js
  * MV3 service worker：菜单/快捷键、单页与选区转换、批量抓取+转换编排、下载。
  */
@@ -485,7 +487,8 @@
         const rawLen = html.length;
         const mdLen = (markdown || '').trim().length;
         const likelyShell = rawLen >= 20000 && mdLen < Math.max(200, rawLen * 0.01);
-        const sufficient = mdLen >= 80 && !likelyShell;
+        const compatibilityFallback = globalThis.HtmlQuality && globalThis.HtmlQuality.isCompatibilityFallback(markdown);
+        const sufficient = mdLen >= 80 && !likelyShell && !compatibilityFallback;
         if (sufficient) return { markdown, title };
       } catch (_) { /* 回退到标签页渲染 */ }
     }
