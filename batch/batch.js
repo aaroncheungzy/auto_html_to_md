@@ -124,18 +124,16 @@
       row.innerHTML = `
         <input type="checkbox" class="link-check" data-index="${i}" checked />
         <span class="link-text">${escapeHtml(link.text)}</span>
-        <span class="link-url" title="${escapeHtml(link.url)}">${escapeHtml(link.url)}</span>`;
+        <span class="link-url" title="${escapeHtml(link.url)}">${link.kind === 'interactive' ? '页面内目录项' : escapeHtml(link.url)}</span>`;
       list.appendChild(row);
     });
     syncSelectAll();
   }
 
   function mergeLinks(newLinks) {
-    const seen = new Set(links.map((l) => l.url));
-    let added = 0;
-    (newLinks || []).forEach((l) => {
-      if (!seen.has(l.url)) { seen.add(l.url); links.push(l); added++; }
-    });
+    const merged = window.BatchItems.mergeBatchItems(links, newLinks);
+    links = merged.items;
+    const added = merged.added;
     if (links.length) {
       hide($('empty-state'));
       renderLinks();
@@ -250,7 +248,7 @@
     port.onDisconnect.addListener(() => { /* 端口断开兜底 */ });
     port.postMessage({
       type: 'START',
-      data: { urls: selected.map((l) => l.url), mode, addSourceInfo, concurrency: 4, timeoutMs: 20000 }
+      data: { items: selected.map((l) => ({ ...l, sourceTabId: tabId })), mode, addSourceInfo, concurrency: selected.some((l) => l.kind === 'interactive') ? 1 : 4, timeoutMs: 20000 }
     });
   }
 

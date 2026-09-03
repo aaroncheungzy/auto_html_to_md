@@ -7,6 +7,7 @@
     CONVERT_PAGE: 'CONVERT_PAGE',
     CONVERT_SELECTION: 'CONVERT_SELECTION',
     GET_SELECTION_LINKS: 'GET_SELECTION_LINKS',
+    CAPTURE_INTERACTIVE_ITEM: 'CAPTURE_INTERACTIVE_ITEM',
     START_ELEMENT_PICKER: 'START_ELEMENT_PICKER',
     STOP_ELEMENT_PICKER: 'STOP_ELEMENT_PICKER'
   };
@@ -104,6 +105,16 @@
     });
 
     return { links, reason: links.length ? 'ok' : 'no-links' };
+  }
+
+  async function captureInteractiveItem(payload) {
+    const id = payload && payload.actionId;
+    const el = id && document.querySelector(`[data-auto-html-to-md-action-id="${CSS.escape(id)}"]`);
+    if (!el) throw new Error('页面内目录项已失效，请重新拾取');
+    el.click();
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    await applyConverterSettings();
+    return { markdown: window.converter.convertPage(), title: payload.text || document.title, url: location.href };
   }
 
   /* ---------- 元素选择器 ---------- */
@@ -212,6 +223,9 @@
 
           case MSG.GET_SELECTION_LINKS:
             sendResponse({ success: true, data: getSelectionLinks() }); break;
+
+          case MSG.CAPTURE_INTERACTIVE_ITEM:
+            sendResponse({ success: true, data: await captureInteractiveItem(msg.payload) }); break;
 
           case MSG.CONVERT_PAGE: {
             await applyConverterSettings();

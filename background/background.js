@@ -126,8 +126,34 @@
   }
 
   /* 在目标页安装增强链接提取器（供框选/选区提取前调用，幂等） */
+  function installInteractiveItemExtractor() {
+    globalThis.extractInteractiveItems = function (node) {
+      const out = [], seen = new Set();
+      const list = node && node.querySelectorAll ? Array.from(node.querySelectorAll('a[href]')) : [];
+      if (node && node.nodeType === 1 && node.matches('a[href]')) list.unshift(node);
+      list.forEach((el) => {
+        const href = (el.getAttribute('href') || '').trim();
+        if (!/^(javascript:|#?$)/i.test(href)) return;
+        let actionId = el.getAttribute('data-auto-html-to-md-action-id');
+        if (!actionId) {
+          actionId = `action-${(window.__autoHtmlToMdActionSeq || 0) + 1}`;
+          window.__autoHtmlToMdActionSeq = (window.__autoHtmlToMdActionSeq || 0) + 1;
+          el.setAttribute('data-auto-html-to-md-action-id', actionId);
+        }
+        if (seen.has(actionId)) return;
+        seen.add(actionId);
+        const text = (el.textContent || el.title || '').trim().replace(/\s+/g, ' ').slice(0, 200);
+        if (text) out.push({ kind: 'interactive', actionId, text, url: href || 'javascript:;' });
+      });
+      return out;
+    };
+  }
+
   async function ensureExtractorInjected(tabId) {
-    try { await chrome.scripting.executeScript({ target: { tabId }, func: installExtractLinks }); } catch (_) {}
+    try {
+      await chrome.scripting.executeScript({ target: { tabId }, func: installExtractLinks });
+      await chrome.scripting.executeScript({ target: { tabId }, func: installInteractiveItemExtractor });
+    } catch (_) {}
   }
 
   /* 框选区域拾取链接：注入到页面，高亮元素，点击拾取其内部所有链接（可连续拾取，ESC/右键完成） */
@@ -178,7 +204,7 @@
     }
     function collectLinks(root) {
       const here = location.href;
-      if (globalThis.extractLinks) return globalThis.extractLinks(root, here);
+      if (globalThis.extractLinks) return [...globalThis.extractLinks(root, here), ...(globalThis.extractInteractiveItems ? globalThis.extractInteractiveItems(root) : [])];
       // 兜底：仅标准 <a href>
       const links = [];
       const seen = new Set();
@@ -215,7 +241,7 @@
       e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
       const links = collectLinks(currentEl);
       let added = 0;
-      links.forEach((l) => { if (!allSeen.has(l.url)) { allSeen.add(l.url); allLinks.push(l); added++; } });
+      links.forEach((l) => { const key = l.kind === 'interactive' ? `interactive:${l.actionId}` : `link:${l.url}`; if (!allSeen.has(key)) { allSeen.add(key); allLinks.push(l); added++; } });
       total += links.length;
       try { chrome.runtime.sendMessage({ type: 'LINKS_PICKED', data: { links } }, () => { void chrome.runtime.lastError; }); } catch (_) {}
       showToast(added ? `已拾取 ${added} 个链接（累计 ${allLinks.length}），可继续点击或按 ESC 完成` : '该区域没有新链接，请点击其他区域');
@@ -452,6 +478,12 @@
     return await convertViaTab(url, timeoutMs, returnToTabId);
   }
 
+  async function convertInteractiveItem(item) {
+    const res = await sendToTab(item.sourceTabId, { type: 'CAPTURE_INTERACTIVE_ITEM', payload: { actionId: item.actionId, text: item.text } });
+    if (!res || !res.success) throw new Error((res && res.error) || '页面内目录项转换失败');
+    return res.data;
+  }
+
   async function expandDirectoryLinks(urls, timeoutMs) {
     const results = [];
     for (const url of urls || []) {
@@ -516,12 +548,13 @@
   // bg -> page: { type:'PROGRESS', data:{ index, total, url, status, title?, markdown?, error? } }
   // bg -> page: { type:'DONE', data:{ mode, addSourceInfo, results, combinedMarkdown } }
   async function runBatch(port, data) {
-    const { urls, mode, addSourceInfo, concurrency, timeoutMs } = data;
+    const { items: requestedItems, mode, addSourceInfo, concurrency, timeoutMs } = data;
     const batchTabId = port.sender && port.sender.tab && port.sender.tab.id;
-    const total = urls.length;
+    const items = requestedItems || [];
+    const total = items.length;
     const results = new Array(total);
-    const queue = urls.map((url, index) => ({ url, index }));
-    const pool = Math.max(1, Math.min(concurrency || 4, 8));
+    const queue = items.map((source, index) => ({ source, index }));
+    const pool = items.some((item) => item.kind === 'interactive') ? 1 : Math.max(1, Math.min(concurrency || 4, 8));
 
     // 一次性探测离屏文档是否可用（不可用则全部走标签页渲染）
     let useOffscreen = true;
@@ -531,12 +564,14 @@
       while (queue.length) {
         const item = queue.shift();
         if (!item) break;
-        const { url, index } = item;
+        const { source, index } = item;
+        const url = source.kind === 'interactive' ? `页面内目录：${source.text}` : source.url;
         safePost(port, { type: 'PROGRESS', data: { index, total, url, status: 'start' } });
         try {
-          const { markdown, title } = await convertUrl(url, timeoutMs, useOffscreen, batchTabId);
-          results[index] = { url, title, markdown, error: null };
-          safePost(port, { type: 'PROGRESS', data: { index, total, url, status: 'done', title, markdown } });
+          const converted = source.kind === 'interactive' ? await convertInteractiveItem(source) : await convertUrl(source.url, timeoutMs, useOffscreen, batchTabId);
+          const { markdown, title } = converted;
+          results[index] = { url: converted.url || source.url, title, markdown, error: null };
+          safePost(port, { type: 'PROGRESS', data: { index, total, url: converted.url || source.url, status: 'done', title, markdown } });
         } catch (err) {
           results[index] = { url, title: '', markdown: '', error: err.message || String(err) };
           safePost(port, { type: 'PROGRESS', data: { index, total, url, status: 'error', error: err.message || String(err) } });
