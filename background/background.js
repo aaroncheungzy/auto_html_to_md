@@ -1,4 +1,4 @@
-importScripts('utils/htmlQuality.js');
+importScripts('../utils/htmlQuality.js');
 
 /* background/background.js
  * MV3 service worker：菜单/快捷键、单页与选区转换、批量抓取+转换编排、下载。
