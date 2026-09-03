@@ -134,12 +134,16 @@
       if (node && node.nodeType === 1 && node.matches('a[href]')) list.unshift(node);
       list.forEach((el) => {
         if (el.matches('.list-item-main[id]')) {
-          const actionId = `job-${el.id}`;
-          if (seen.has(actionId)) return;
-          seen.add(actionId);
-          el.setAttribute('data-auto-html-to-md-action-id', actionId);
+          let url;
+          try {
+            url = new URL('./posDetail.html', location.href);
+            url.searchParams.set('postId', el.id);
+            url.searchParams.set('postType', 'campus');
+          } catch (_) { return; }
+          if (seen.has(url.href)) return;
+          seen.add(url.href);
           const text = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 200);
-          if (text) out.push({ kind: 'interactive', actionId, text, url: 'javascript:;', detailId: `detail_${el.id}` });
+          if (text) out.push({ kind: 'link', text, url: url.href });
           return;
         }
         const href = (el.getAttribute('href') || '').trim();
