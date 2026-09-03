@@ -138,8 +138,27 @@
       root.querySelectorAll(
         '[style*="display: none"], [style*="display:none"], .hidden, [hidden], [aria-hidden="true"]'
       ).forEach((n) => n.remove());
+      this._structureTextBlocks(root);
       this._normalizeTables(root);
       return root;
+    }
+
+    _structureTextBlocks(root) {
+      if (!window.TextBlockStructure) return;
+      root.querySelectorAll('.post-detail__module').forEach((module) => {
+        const title = module.querySelector(':scope > .tit');
+        const detail = module.querySelector(':scope > .detail');
+        if (!detail) return;
+        const doc = detail.ownerDocument;
+        if (title) { const h = doc.createElement('h2'); h.textContent = title.textContent.trim(); title.replaceWith(h); }
+        const blocks = window.TextBlockStructure.textToBlocks(detail.textContent);
+        const fragment = doc.createDocumentFragment();
+        blocks.forEach((block) => {
+          if (block.type === 'p') { const p = doc.createElement('p'); p.textContent = block.text; fragment.appendChild(p); }
+          else { const ul = doc.createElement('ul'); block.items.forEach((text) => { const li = doc.createElement('li'); li.textContent = text; ul.appendChild(li); }); fragment.appendChild(ul); }
+        });
+        detail.replaceWith(fragment);
+      });
     }
 
     /**

@@ -111,14 +111,13 @@
     const id = payload && payload.actionId;
     const el = id && document.querySelector(`[data-auto-html-to-md-action-id="${CSS.escape(id)}"]`);
     if (!el) throw new Error('页面内目录项已失效，请重新拾取');
+    const before = (document.body.innerText || '').replace(/\s+/g, ' ').slice(0, 20000);
     el.click();
     await new Promise((resolve) => setTimeout(resolve, 1200));
     await applyConverterSettings();
-    const detail = payload.detailId && document.getElementById(payload.detailId);
-    const markdown = detail && (detail.textContent || '').trim().length > 30
-      ? window.converter.convertElement(detail)
-      : window.converter.convertPage();
-    return { markdown, title: payload.text || document.title, url: location.href };
+    const after = (document.body.innerText || '').replace(/\s+/g, ' ').slice(0, 20000);
+    if (before === after) throw new Error('点击后源页面未变化，正在等待新标签页结果');
+    return { markdown: window.converter.convertPage(), title: payload.text || document.title, url: location.href };
   }
 
   /* ---------- 元素选择器 ---------- */

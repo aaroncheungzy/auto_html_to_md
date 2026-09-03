@@ -16,6 +16,7 @@
   const INJECT_FILES = [
     'lib/turndown.js',
     'lib/turndown-plugin-gfm.js',
+    'utils/textBlockStructure.js',
     'utils/converter.js',
     'content/content.js'
   ];
@@ -488,8 +489,29 @@
   }
 
   async function convertInteractiveItem(item) {
-    const res = await sendToTab(item.sourceTabId, { type: 'CAPTURE_INTERACTIVE_ITEM', payload: { actionId: item.actionId, text: item.text, detailId: item.detailId } });
-    if (!res || !res.success) throw new Error((res && res.error) || '页面内目录项转换失败');
+    const openedTab = new Promise((resolve) => {
+      let done = false;
+      const finish = (tab) => { if (!done) { done = true; clearTimeout(timer); chrome.tabs.onCreated.removeListener(listener); resolve(tab); } };
+      const listener = (tab) => { if (tab.openerTabId === item.sourceTabId) finish(tab); };
+      chrome.tabs.onCreated.addListener(listener);
+      const timer = setTimeout(() => finish(null), 3000);
+    });
+    const sourceResult = sendToTab(item.sourceTabId, { type: 'CAPTURE_INTERACTIVE_ITEM', payload: { actionId: item.actionId, text: item.text } })
+      .catch((error) => ({ success: false, error: error.message || String(error) }));
+    const tab = await openedTab;
+    if (tab) {
+      try {
+        await waitForTabComplete(tab.id, 20000);
+        await renderReady(tab.id, 15000);
+        const res = await sendToTab(tab.id, { type: 'CONVERT_PAGE' });
+        if (!res || !res.success) throw new Error((res && res.error) || '新标签页转换失败');
+        return res.data;
+      } finally {
+        chrome.tabs.remove(tab.id).catch(() => {});
+      }
+    }
+    const res = await sourceResult;
+    if (!res || !res.success) throw new Error((res && res.error) || '点击后未打开新标签页且源页面未变化');
     return res.data;
   }
 

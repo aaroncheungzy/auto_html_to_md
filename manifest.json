@@ -33,7 +33,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["lib/Readability.js", "lib/turndown.js", "lib/turndown-plugin-gfm.js", "utils/converter.js", "content/content.js"],
+      "js": ["lib/Readability.js", "lib/turndown.js", "lib/turndown-plugin-gfm.js", "utils/textBlockStructure.js", "utils/converter.js", "content/content.js"],
       "run_at": "document_end"
     }
   ],
