@@ -114,7 +114,11 @@
     el.click();
     await new Promise((resolve) => setTimeout(resolve, 1200));
     await applyConverterSettings();
-    return { markdown: window.converter.convertPage(), title: payload.text || document.title, url: location.href };
+    const detail = payload.detailId && document.getElementById(payload.detailId);
+    const markdown = detail && (detail.textContent || '').trim().length > 30
+      ? window.converter.convertElement(detail)
+      : window.converter.convertPage();
+    return { markdown, title: payload.text || document.title, url: location.href };
   }
 
   /* ---------- 元素选择器 ---------- */

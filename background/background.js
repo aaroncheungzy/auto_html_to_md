@@ -129,9 +129,18 @@
   function installInteractiveItemExtractor() {
     globalThis.extractInteractiveItems = function (node) {
       const out = [], seen = new Set();
-      const list = node && node.querySelectorAll ? Array.from(node.querySelectorAll('a[href]')) : [];
+      const list = node && node.querySelectorAll ? Array.from(node.querySelectorAll('a[href], .list-item-main[id]')) : [];
       if (node && node.nodeType === 1 && node.matches('a[href]')) list.unshift(node);
       list.forEach((el) => {
+        if (el.matches('.list-item-main[id]')) {
+          const actionId = `job-${el.id}`;
+          if (seen.has(actionId)) return;
+          seen.add(actionId);
+          el.setAttribute('data-auto-html-to-md-action-id', actionId);
+          const text = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 200);
+          if (text) out.push({ kind: 'interactive', actionId, text, url: 'javascript:;', detailId: `detail_${el.id}` });
+          return;
+        }
         const href = (el.getAttribute('href') || '').trim();
         if (!/^(javascript:|#?$)/i.test(href)) return;
         let actionId = el.getAttribute('data-auto-html-to-md-action-id');
@@ -479,7 +488,7 @@
   }
 
   async function convertInteractiveItem(item) {
-    const res = await sendToTab(item.sourceTabId, { type: 'CAPTURE_INTERACTIVE_ITEM', payload: { actionId: item.actionId, text: item.text } });
+    const res = await sendToTab(item.sourceTabId, { type: 'CAPTURE_INTERACTIVE_ITEM', payload: { actionId: item.actionId, text: item.text, detailId: item.detailId } });
     if (!res || !res.success) throw new Error((res && res.error) || '页面内目录项转换失败');
     return res.data;
   }
