@@ -489,16 +489,22 @@
   }
 
   async function convertInteractiveItem(item) {
+    const beforeTabs = await chrome.tabs.query({});
+    const beforeIds = new Set(beforeTabs.map((tab) => tab.id));
     const openedTab = new Promise((resolve) => {
       let done = false;
       const finish = (tab) => { if (!done) { done = true; clearTimeout(timer); chrome.tabs.onCreated.removeListener(listener); resolve(tab); } };
       const listener = (tab) => { if (tab.openerTabId === item.sourceTabId) finish(tab); };
       chrome.tabs.onCreated.addListener(listener);
-      const timer = setTimeout(() => finish(null), 3000);
+      const timer = setTimeout(() => finish(null), 8000);
     });
     const sourceResult = sendToTab(item.sourceTabId, { type: 'CAPTURE_INTERACTIVE_ITEM', payload: { actionId: item.actionId, text: item.text } })
       .catch((error) => ({ success: false, error: error.message || String(error) }));
-    const tab = await openedTab;
+    let tab = await openedTab;
+    if (!tab) {
+      const afterTabs = await chrome.tabs.query({});
+      tab = afterTabs.find((candidate) => !beforeIds.has(candidate.id) && candidate.id !== item.sourceTabId) || null;
+    }
     if (tab) {
       try {
         await waitForTabComplete(tab.id, 20000);
@@ -511,7 +517,7 @@
       }
     }
     const res = await sourceResult;
-    if (!res || !res.success) throw new Error((res && res.error) || '点击后未打开新标签页且源页面未变化');
+    if (!res || !res.success || !res.data || !res.data.sourceChanged) throw new Error('点击后未检测到新标签页或源页面内容变化');
     return res.data;
   }
 

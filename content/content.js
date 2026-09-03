@@ -116,8 +116,8 @@
     await new Promise((resolve) => setTimeout(resolve, 1200));
     await applyConverterSettings();
     const after = (document.body.innerText || '').replace(/\s+/g, ' ').slice(0, 20000);
-    if (before === after) throw new Error('点击后源页面未变化，正在等待新标签页结果');
-    return { markdown: window.converter.convertPage(), title: payload.text || document.title, url: location.href };
+    if (before === after) return { sourceChanged: false };
+    return { sourceChanged: true, markdown: window.converter.convertPage(), title: payload.text || document.title, url: location.href };
   }
 
   /* ---------- 元素选择器 ---------- */
