@@ -49,6 +49,227 @@
     document.body.removeChild(ta);
   }
 
+  /* ---------- 文字选区浮窗 ---------- */
+  const selectionAction = (() => {
+    if (!window.SelectionFeature) return { hide() {} };
+
+    let host = null;
+    let shadow = null;
+    let markdownButton = null;
+    let translateButton = null;
+    let resultPanel = null;
+    let resultMeta = null;
+    let resultText = null;
+    let savedRange = null;
+    let selecting = false;
+    let updateTimer = null;
+    let busy = false;
+
+    function ensureHost() {
+      if (host && host.isConnected) return;
+      host = document.createElement('div');
+      host.id = 'auto-html-to-md-selection-action';
+      host.style.cssText = 'position:fixed;display:none;z-index:2147483647;width:max-content;height:auto;pointer-events:auto;';
+      shadow = host.attachShadow({ mode: 'closed' });
+      const style = document.createElement('style');
+      style.textContent = `
+        :host { all: initial; }
+        .wrap { max-width: min(420px, calc(100vw - 16px)); font: 14px/1.5 system-ui, sans-serif; color: #0f172a; }
+        .actions { display: flex; gap: 7px; justify-content: flex-end; }
+        button {
+          all: initial; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px;
+          height: 38px; padding: 0 13px; border: 1px solid #1d4ed8;
+          border-radius: 9px; background: #2563eb; color: #fff; cursor: pointer;
+          box-shadow: 0 8px 24px rgba(15,23,42,.24); font: 600 14px/1 system-ui, sans-serif;
+          -webkit-user-select: none !important; user-select: none !important;
+        }
+        button.secondary { border-color: #6d28d9; background: #7c3aed; }
+        button:hover { background: #1d4ed8; }
+        button.secondary:hover { background: #6d28d9; }
+        button:focus-visible { outline: 3px solid rgba(96,165,250,.55); outline-offset: 2px; }
+        button:disabled { opacity: .72; cursor: wait; }
+        .result { display: none; width: 380px; max-width: calc(100vw - 16px); margin-top: 8px; padding: 12px;
+          border: 1px solid #dbeafe; border-radius: 10px; background: #fff; box-shadow: 0 12px 30px rgba(15,23,42,.2); }
+        .result.visible { display: block; }
+        .meta { color: #64748b; font-size: 12px; margin-bottom: 6px; }
+        .text { max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere;
+          -webkit-user-select: text !important; user-select: text !important; }
+        .result-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+        .result-actions button { height: 30px; padding: 0 10px; box-shadow: none; font-size: 12px; }
+        .result-actions .close { color: #334155; background: #f8fafc; border-color: #cbd5e1; }
+      `;
+      const wrap = document.createElement('div');
+      wrap.className = 'wrap';
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      markdownButton = document.createElement('button');
+      markdownButton.type = 'button';
+      markdownButton.textContent = '生成 Markdown';
+      translateButton = document.createElement('button');
+      translateButton.type = 'button';
+      translateButton.className = 'secondary';
+      translateButton.textContent = '翻译';
+      [markdownButton, translateButton].forEach((actionButton) => actionButton.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      }));
+      markdownButton.addEventListener('click', generate);
+      translateButton.addEventListener('click', translate);
+      actions.append(markdownButton, translateButton);
+
+      resultPanel = document.createElement('div');
+      resultPanel.className = 'result';
+      resultMeta = document.createElement('div');
+      resultMeta.className = 'meta';
+      resultText = document.createElement('div');
+      resultText.className = 'text';
+      const resultActions = document.createElement('div');
+      resultActions.className = 'result-actions';
+      const copyButton = document.createElement('button');
+      copyButton.type = 'button';
+      copyButton.textContent = '复制译文';
+      copyButton.addEventListener('click', () => copyToClipboard(resultText.textContent || ''));
+      const closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'close';
+      closeButton.textContent = '关闭';
+      closeButton.addEventListener('click', hide);
+      resultActions.append(copyButton, closeButton);
+      resultPanel.append(resultMeta, resultText, resultActions);
+      wrap.append(actions, resultPanel);
+      shadow.append(style, wrap);
+      document.documentElement.appendChild(host);
+    }
+
+    function hide() {
+      if (host) host.style.display = 'none';
+      if (!busy) savedRange = null;
+      if (resultPanel) resultPanel.classList.remove('visible');
+    }
+
+    function isInsideAction(selection) {
+      const node = selection && selection.anchorNode;
+      const root = node && node.getRootNode ? node.getRootNode() : null;
+      return !!(root && shadow && root === shadow);
+    }
+
+    function update() {
+      updateTimer = null;
+      if (selecting || picker.active) return;
+      const selection = window.getSelection();
+      if (!window.SelectionFeature.isEligibleSelection(selection) || isInsideAction(selection)) {
+        hide();
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      let rect = range.getBoundingClientRect();
+      if ((!rect.width && !rect.height) && range.getClientRects) {
+        const rects = range.getClientRects();
+        rect = rects.length ? rects[rects.length - 1] : rect;
+      }
+      if (!rect || (!rect.width && !rect.height)) { hide(); return; }
+
+      savedRange = range.cloneRange();
+      ensureHost();
+      host.style.display = 'block';
+      if (resultPanel) resultPanel.classList.remove('visible');
+      const size = host.getBoundingClientRect();
+      const pos = window.SelectionFeature.positionFloatingButton(
+        rect,
+        window.innerWidth,
+        window.innerHeight,
+        size.width || 132,
+        size.height || 38
+      );
+      host.style.left = `${Math.round(pos.left)}px`;
+      host.style.top = `${Math.round(pos.top)}px`;
+    }
+
+    function scheduleUpdate() {
+      clearTimeout(updateTimer);
+      updateTimer = setTimeout(update, 60);
+    }
+
+    async function generate() {
+      if (busy || !savedRange) return;
+      busy = true;
+      markdownButton.disabled = true;
+      translateButton.disabled = true;
+      markdownButton.textContent = '生成中…';
+      try {
+        await applyConverterSettings();
+        const md = window.converter.convertRange(savedRange, location.href);
+        if (!md) throw new Error('选区没有可转换的内容');
+        const res = await chrome.runtime.sendMessage({
+          type: 'FLOATING_SELECTION_CONVERTED',
+          data: { markdown: md, title: document.title, url: location.href }
+        });
+        if (!res || !res.success) throw new Error((res && res.error) || '生成失败');
+        toast('Markdown 已生成');
+        hide();
+      } catch (err) {
+        toast('生成失败：' + (err.message || String(err)), true);
+      } finally {
+        busy = false;
+        savedRange = null;
+        if (markdownButton) {
+          markdownButton.disabled = false;
+          translateButton.disabled = false;
+          markdownButton.textContent = '生成 Markdown';
+        }
+      }
+    }
+
+    async function translate() {
+      if (busy || !savedRange) return;
+      const text = savedRange.toString().trim();
+      if (!text) return;
+      busy = true;
+      markdownButton.disabled = true;
+      translateButton.disabled = true;
+      translateButton.textContent = '翻译中…';
+      try {
+        const res = await chrome.runtime.sendMessage({ type: 'TRANSLATE_SELECTION', data: { text } });
+        if (!res || !res.success) {
+          const error = new Error((res && res.error) || '翻译失败');
+          error.code = res && res.code;
+          throw error;
+        }
+        resultText.textContent = res.data.translatedText;
+        resultMeta.textContent = `${res.data.sourceLanguage || 'auto'} → ${res.data.targetLanguage}`;
+        resultPanel.classList.add('visible');
+        const bounds = host.getBoundingClientRect();
+        if (bounds.right > window.innerWidth - 8) host.style.left = `${Math.max(8, window.innerWidth - bounds.width - 8)}px`;
+        if (bounds.bottom > window.innerHeight - 8) host.style.top = `${Math.max(8, window.innerHeight - bounds.height - 8)}px`;
+      } catch (err) {
+        if (err.code === 'CONFIG_REQUIRED') {
+          await chrome.runtime.sendMessage({ type: 'OPEN_TRANSLATION_OPTIONS' });
+          toast('请先填写 Azure Translator Key', true);
+        } else {
+          toast('翻译失败：' + (err.message || String(err)), true);
+        }
+      } finally {
+        busy = false;
+        markdownButton.disabled = false;
+        translateButton.disabled = false;
+        translateButton.textContent = '翻译';
+      }
+    }
+
+    document.addEventListener('pointerdown', (event) => {
+      if (host && event.composedPath && event.composedPath().includes(host)) return;
+      selecting = true;
+      hide();
+    }, true);
+    document.addEventListener('pointerup', () => { selecting = false; scheduleUpdate(); }, true);
+    document.addEventListener('keyup', scheduleUpdate, true);
+    document.addEventListener('selectionchange', () => { if (!selecting) scheduleUpdate(); });
+    window.addEventListener('scroll', hide, true);
+    window.addEventListener('resize', hide);
+
+    return { hide };
+  })();
+
   /* ---------- 采集选区内的文档链接（增强版） ---------- */
   function getSelectionLinks() {
     const sel = window.getSelection();
@@ -128,7 +349,9 @@
     tip: null,
     start() {
       if (this.active) return;
+      selectionAction.hide();
       this.active = true;
+      document.documentElement.setAttribute('data-auto-html-to-md-picker-active', '');
       document.body.style.cursor = 'crosshair';
       document.body.style.userSelect = 'none';
       this.overlay = document.createElement('div');
@@ -143,6 +366,7 @@
     stop() {
       if (!this.active) return;
       this.active = false;
+      document.documentElement.removeAttribute('data-auto-html-to-md-picker-active');
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
       this._clearHighlight();

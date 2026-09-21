@@ -1,4 +1,4 @@
-importScripts('../utils/htmlQuality.js');
+importScripts('../utils/htmlQuality.js', '../utils/translation.js');
 
 /* background/background.js
  * MV3 service worker：菜单/快捷键、单页与选区转换、批量抓取+转换编排、下载。
@@ -12,13 +12,21 @@ importScripts('../utils/htmlQuality.js');
     batchConcurrency: 4,
     batchTimeoutMs: 20000,
     keepAllImages: false,
-    bundleImages: true
+    bundleImages: true,
+    unlockSelection: true,
+    translationProvider: 'azure',
+    translationApiKey: '',
+    translationRegion: '',
+    translationChineseTarget: 'en',
+    translationOtherTarget: 'zh-Hans'
   };
 
   const INJECT_FILES = [
     'lib/turndown.js',
     'lib/turndown-plugin-gfm.js',
     'utils/textBlockStructure.js',
+    'utils/selectionFeature.js',
+    'content/unlock.js',
     'utils/converter.js',
     'content/content.js'
   ];
@@ -176,6 +184,7 @@ importScripts('../utils/htmlQuality.js');
   function startLinkPickerInPage() {
     if (window.__linkPickerActive) return { started: false, reason: 'already-active' };
     window.__linkPickerActive = true;
+    document.documentElement.setAttribute('data-auto-html-to-md-picker-active', '');
     document.body.style.cursor = 'crosshair';
     document.body.style.userSelect = 'none';
 
@@ -204,6 +213,7 @@ importScripts('../utils/htmlQuality.js');
 
     function cleanup() {
       window.__linkPickerActive = false;
+      document.documentElement.removeAttribute('data-auto-html-to-md-picker-active');
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
       [overlay, tip, box, toast].forEach((e) => e.remove());
@@ -587,6 +597,20 @@ importScripts('../utils/htmlQuality.js');
     await handleConversionResult(tab, md, 'selection');
   }
 
+  async function handleFloatingSelection(tab, data) {
+    if (!tab || !data || !data.markdown) throw new Error('未获取到有效选区内容');
+    const settings = await getSettings();
+    let md = data.markdown;
+    if (settings.addSourceInfo) md = formatWithSource(md, data.title, data.url);
+    await handleConversionResult(tab, md, 'selection');
+  }
+
+  async function translateSelection(data) {
+    const text = data && data.text;
+    const settings = await getSettings();
+    return globalThis.TranslationFeature.translateWithAzure(text, settings);
+  }
+
   /* ---------------- 批量转换：端口协议 ---------------- */
   // page -> bg: { type:'START', data:{ urls, mode, addSourceInfo, concurrency, timeoutMs } }
   // bg -> page: { type:'PROGRESS', data:{ index, total, url, status, title?, markdown?, error? } }
@@ -712,6 +736,18 @@ importScripts('../utils/htmlQuality.js');
             await convertSelection(tab);
             sendResponse({ success: true }); break;
           }
+          case 'FLOATING_SELECTION_CONVERTED': {
+            await handleFloatingSelection(sender.tab, msg.data);
+            sendResponse({ success: true }); break;
+          }
+          case 'TRANSLATE_SELECTION': {
+            const data = await translateSelection(msg.data);
+            sendResponse({ success: true, data }); break;
+          }
+          case 'OPEN_TRANSLATION_OPTIONS': {
+            await chrome.runtime.openOptionsPage();
+            sendResponse({ success: true }); break;
+          }
           case 'START_ELEMENT_PICKER': {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (isRestricted(tab.url)) { sendResponse({ success: false, error: '不支持在此页面' }); break; }
@@ -812,7 +848,7 @@ importScripts('../utils/htmlQuality.js');
             return;
         }
       } catch (e) {
-        sendResponse({ success: false, error: e.message || String(e) });
+        sendResponse({ success: false, error: e.message || String(e), code: e.code || '' });
       }
     })();
     return true; // 异步响应

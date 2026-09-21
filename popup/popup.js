@@ -54,8 +54,27 @@
     setTimeout(() => window.close(), 300);
   });
 
+  $('translation-settings').addEventListener('click', async () => {
+    await chrome.runtime.openOptionsPage();
+    window.close();
+  });
+
   document.addEventListener('DOMContentLoaded', async () => {
     $('version').textContent = 'v' + chrome.runtime.getManifest().version;
+    // 初始化全局网页解锁开关（缺失时默认开启）
+    const unlock = $('unlock-selection');
+    try {
+      const { settings } = await chrome.storage.local.get(['settings']);
+      unlock.checked = !settings || settings.unlockSelection !== false;
+    } catch (_) { unlock.checked = true; }
+    unlock.addEventListener('change', async () => {
+      try {
+        const { settings } = await chrome.storage.local.get(['settings']);
+        await chrome.storage.local.set({ settings: { ...settings, unlockSelection: unlock.checked } });
+        setStatus(unlock.checked ? '网页解锁已开启' : '网页解锁已关闭', 'status-ok');
+      } catch (_) { setStatus('保存解锁设置失败', 'status-err'); }
+    });
+
     // 初始化"打包图片到本地"开关
     const cb = $('bundle-images');
     try {

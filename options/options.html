@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>翻译设置</title>
+  <link rel="stylesheet" href="../styles/styles.css">
+</head>
+<body class="options-body">
+  <main class="options-container">
+    <header class="options-header">
+      <h1>选区翻译设置</h1>
+      <p>选中文字后，可在浮窗中直接生成译文。</p>
+    </header>
+
+    <section class="card settings-card">
+      <h2>翻译服务</h2>
+      <label class="field">
+        <span>服务商</span>
+        <select id="translation-provider" disabled>
+          <option value="azure">Azure Translator</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Translator Key</span>
+        <div class="input-row">
+          <input id="translation-api-key" type="password" autocomplete="off" placeholder="由用户自行填写，不随扩展分发">
+          <button id="toggle-key" class="btn" type="button">显示</button>
+        </div>
+      </label>
+      <label class="field">
+        <span>区域（Region）</span>
+        <input id="translation-region" type="text" autocomplete="off" placeholder="全局单服务资源可留空；例如 eastasia">
+      </label>
+      <p class="settings-note">Key 仅保存在本机扩展存储中。区域资源或多服务资源必须填写 Region；全局单服务 Translator 资源可留空。</p>
+    </section>
+
+    <section class="card settings-card">
+      <h2>默认翻译逻辑</h2>
+      <label class="field">
+        <span>选中内容包含中文时，翻译为</span>
+        <select id="translation-chinese-target"></select>
+      </label>
+      <label class="field">
+        <span>选中内容不含中文时，翻译为</span>
+        <select id="translation-other-target"></select>
+      </label>
+      <p class="settings-note">默认：中文 → 英语；非中文 → 简体中文。源语言由 Azure 自动识别。</p>
+    </section>
+
+    <div class="settings-actions">
+      <button id="save" class="btn btn-primary" type="button">保存设置</button>
+      <button id="clear-key" class="btn" type="button">清除 Key</button>
+      <span id="status" class="settings-status" aria-live="polite"></span>
+    </div>
+  </main>
+  <script src="../utils/translation.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

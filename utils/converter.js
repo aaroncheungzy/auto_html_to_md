@@ -389,10 +389,17 @@
     convertSelection() {
       const sel = window.getSelection();
       if (!sel || sel.rangeCount === 0) throw new Error('未选中任何内容');
-      const range = sel.getRangeAt(0);
-      const container = document.createElement('div');
+      return this.convertRange(sel.getRangeAt(0), location.href);
+    }
+
+    convertRange(range, baseUrl) {
+      if (!range) throw new Error('未选中任何内容');
+      const owner = range.commonAncestorContainer && range.commonAncestorContainer.ownerDocument;
+      const doc = owner || (typeof document !== 'undefined' ? document : null);
+      if (!doc) throw new Error('无法读取选区内容');
+      const container = doc.createElement('div');
       container.appendChild(range.cloneContents());
-      this.baseUrl = location.href;
+      this.baseUrl = baseUrl || null;
       try {
         return this.convertElement(container);
       } finally {
