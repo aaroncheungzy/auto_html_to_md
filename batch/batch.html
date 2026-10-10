@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>批量转换为 Markdown</title>
   <link rel="stylesheet" href="../styles/styles.css">
+  <script src="../utils/theme.js"></script>
 </head>
 <body class="batch-body">
   <div class="batch-container">
     <header class="batch-header">
-      <h1>📦 批量转换选区链接</h1>
+      <h1>批量转换</h1>
       <p class="muted">抓取选区内每个链接的页面并转为 Markdown，可分别下载或合并为一个文件。</p>
     </header>
 
@@ -19,9 +20,9 @@
         <h2>第 1 步：选择要转换的链接</h2>
         <div class="card-actions">
           <label class="check"><input type="checkbox" id="select-all" checked /> 全选</label>
-          <button id="btn-refresh" class="link-btn">🔄 重新读取选区</button>
-          <button id="btn-pick" class="link-btn">🎯 框选区域拾取</button>
-          <button id="btn-expand" class="link-btn">↳ 展开已选目录</button>
+          <button id="btn-refresh" class="link-btn">重新读取选区</button>
+          <button id="btn-pick" class="link-btn">框选区域拾取</button>
+          <button id="btn-expand" class="link-btn">展开已选目录</button>
         </div>
       </div>
       <div id="link-list" class="link-list"></div>
@@ -29,7 +30,7 @@
       <div id="empty-state" class="empty-state" hidden>
         <p id="empty-text"></p>
         <button id="btn-pick-empty" class="btn btn-accent" style="margin-top:10px">
-          <span class="icon">🎯</span><span class="label">改用框选区域拾取链接</span>
+          <span class="label">改用框选区域拾取链接</span>
         </button>
       </div>
     </section>

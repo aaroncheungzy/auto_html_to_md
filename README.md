@@ -1,102 +1,156 @@
-# 网页转 Markdown（含批量转换）
+# 网页转 Markdown
 
-一个 Chrome / Edge（Manifest V3）浏览器扩展，把网页转换为 Markdown。在附件扩展（单页/选区转换）的基础上，**新增批量转换功能**：在页面上框选一段区域，选区内所有文档链接的内容都会被抓取并转换为 Markdown，可「分别下载」每个文件，或「合并为一个文件」下载。
+把网页正文、选中内容和多篇文档保存为 Markdown 的 Chrome / Edge 扩展。支持图片打包、网页选区解锁，以及可自定义的简约界面。
+
+当前版本：**1.3.0** · Manifest V3 · 无需 API Key
+
+## 界面预览
+
+<p>
+  <img src="docs/images/popup-light.png" width="300" alt="浅色界面：页面转换、选区浮窗开关和主题设置">
+  <img src="docs/images/popup-dark.png" width="300" alt="深色界面：自定义主题色与本地偏好设置">
+</p>
 
 ## 功能
 
-- **转换当前页面**：把整页正文转为 Markdown。正文识别三级策略：**Mozilla Readability**（Firefox 阅读模式引擎，首选）→ 语义选择器（`article`/`main`）→ 自研评分法兜底。
-- **解除选中/复制限制**（默认开）：覆盖网页常见的 `user-select:none` 及选中、复制、右键事件限制，并兼容 Articulate Storyline 课件的无障碍遮罩；可在扩展弹窗中全局开关。
-- **选区 Markdown / 翻译浮窗**：选中普通网页正文后，可在选区附近生成 Markdown，或直接调用用户自己的 Azure Translator 翻译。默认中文译为英语，非中文译为简体中文，两种目标语言均可设置。
-- **打包为 ZIP**（默认开，弹窗/批量页可关）：下载时把 Markdown 与其远程图片**打包成一个 `.zip`** 下载（只触发一次下载确认），图片在压缩包内 `images/` 目录、md 链接改写为相对路径。单页为 `auto_html_to_md/<标题>.zip`；批量合并为 `auto_html_to_md/合并文档_<时间戳>.zip`；批量分别下载为 `auto_html_to_md/批量文档_<时间戳>.zip`（每篇一个文件夹，共享 `images/`）。下载失败的图片保留远程链接作为兜底。
-- **转换选定区域**：点选页面任意元素即可提取该元素内容（合并原"选区文本"与"元素选择"两个入口）。
-- **批量转换选区链接**（核心新增）：
-  1. 在页面上选中包含链接的区域；
-  2. 打开批量页，自动列出选区内所有去重后的 `http(s)` 链接，可勾选；
-  3. 选择输出方式：**分别下载**（每个链接一个 `.md`）或 **合并为一个文件**；
-  4. 开始转换，实时显示进度与每条状态（成功/失败）；
-  5. 完成后可一键下载，合并模式还提供源码/渲染预览。
+- **整页转换**：提取网页正文，保留标题、段落、列表、表格、代码和图片等 Markdown 结构。
+- **区域转换**：点击页面元素，提取指定区域；也可选中文字后点击附近的「生成 Markdown」浮窗。
+- **批量转换**：框选区域收集链接，逐项勾选后批量转换，分别保存或合并为一个文件。
+- **目录展开**：收集同域、严格位于所选目录路径下的一层子链接，最多 100 个；展开后返回清单，由用户勾选。
+- **图片打包**：把 Markdown 和远程图片保存为 ZIP，图片链接改写为压缩包内的相对路径。
+- **网页解锁**：解除常见的文字选中、复制和右键限制，兼容部分 Articulate Storyline 课件。
+- **个性化外观**：六种预设主题色、自定义颜色，以及浅色、深色、跟随系统三种背景模式。
+- **本地保存设置**：主题和各项持久化偏好保存在本机扩展存储中，重新打开浏览器后继续使用。
 
-## 安装（开发者模式）
+当前版本不包含翻译功能，选区浮窗只有「生成 Markdown」。
 
-1. 打开 Chrome / Edge，地址栏输入 `chrome://extensions`。
-2. 右上角打开「开发者模式」。
-3. 点击「加载已解压的扩展程序」，选择本项目根目录。
-4. 扩展图标出现在工具栏。
+## 安装
+
+1. 下载本仓库 ZIP 并解压，或克隆仓库：
+
+   ```sh
+   git clone https://github.com/aaroncheungzy/auto_html_to_md.git
+   ```
+
+2. 打开扩展管理页：Chrome 使用 `chrome://extensions`，Edge 使用 `edge://extensions`。
+3. 开启「开发者模式」，点击「加载已解压的扩展程序」。
+4. 选择包含 `manifest.json` 的项目根目录，再将扩展固定到工具栏。
+
+安装使用不需要构建，也不需要安装 Node.js；Node.js 仅用于开发检查和测试。
+
+### 更新已安装的扩展
+
+更新项目文件后，在扩展管理页点击「重新加载」，然后刷新已打开的网页。旧页面中的内容脚本需要刷新才能替换；如果仍看到旧版翻译按钮，请检查加载目录并完成这两步。
 
 ## 使用
 
-### 单页 / 选定区域
-- 点击扩展图标 → 选择「转换当前页面」或「转换选定区域」（在页面上点击元素即提取）。
-- 直接选中文字 → 点击选区附近的「生成 Markdown」或「翻译」。译文在当前网页的浮窗内显示并可复制；输入框、文本域和可编辑区域不会显示浮窗。
-- 首次翻译前，在扩展弹窗点击「翻译设置」，填写自己的 Azure Translator Key。全局单服务资源的 Region 可留空；区域或多服务资源须填写 Azure 门户中显示的 Region。
-- 如不希望扩展解除网页限制，可在弹窗中关闭「解除网页选中、复制和右键限制」。
-- 或右键页面 → 选择对应菜单。
-- 快捷键：`Alt+Shift+M`（页面）、`Alt+Shift+S`（选区文本）。
-- 结果在预览页打开，可复制或下载。
+### 当前页面与指定区域
 
-### 批量转换链接
-1. 点击扩展图标 → **批量转换选区链接**：扩展切到源页面进入「框选区域」模式，点击任意容器即拾取其内部所有链接（可连续点击多个区域累积，按 ESC 或右键完成），完成后**自动跳转批量（拓张）页并预填链接**。
-   - 也可右键一段已选中的文本 →「批量转换选区内的链接…」：直接读取选区链接打开批量页。
-2. 批量页列出链接后，勾选要转换的条目。
-3. **框选区域拾取（补充）**：进入批量页后仍可点右上角「🎯 框选区域拾取」继续补充链接，自动并入并去重。
-4. 若选区包含文档目录，勾选目录链接并点击「↳ 展开已选目录」：自动收集**同域、位于该目录路径下的一层子链接**，最多 100 个；结果会回到清单供勾选确认。
-5. 选择「分别下载」或「合并为一个文件」，按需勾选「添加标题与来源」「自动下载」。
-6. 点击「开始批量转换」，等待进度完成。
-7. 完成后：分别下载 -> 点「下载全部」；合并 -> 点「下载合并文件」（可预览/复制）。
+- 点击扩展图标 →「转换当前页面」：提取整页正文。
+- 点击扩展图标 →「转换选定区域」：进入元素拾取模式，点击目标区域；按 Esc 或右键取消。
+- 直接选中正文 →「生成 Markdown」：使用选区快照转换。
+- 右键菜单也提供页面转换、选区转换和批量转换入口。
 
-## 架构
+转换结果通常在预览页打开，可切换源码与渲染视图，并复制或下载。
 
-```
-manifest.json
-├─ background/background.js   服务工作者：菜单/快捷键、单次转换、批量编排、下载、离屏管理
-├─ content/content.js         页面脚本：转换、选区浮窗、采集选区链接、元素选择器
-├─ content/unlock.js          document_start 页面解锁入口
-├─ offscreen/                 离屏文档（MV3）：用 DOMParser + Turndown 解析抓取的 HTML
-│  ├─ offscreen.html
-│  └─ offscreen.js
-├─ popup/                     工具栏弹窗：三个入口
-├─ options/                   翻译凭证和默认目标语言设置
-├─ batch/                     批量转换页：链接清单、进度、下载、合并预览
-├─ preview/                   单次转换预览页：源码/渲染、复制、下载
-├─ utils/converter.js         MarkdownConverter：Turndown + GFM，支持 base-URL 解析
-├─ utils/selectionFeature.js  选区资格、浮窗定位与解锁控制器
-├─ utils/translation.js       语言方向判断与 Azure Translator 请求
-├─ utils/imageBundle.js       图片打包：把 md 远程图片抓取为字节，与 md 一起用 JSZip 打包成单个 .zip（preview/batch 复用）
-├─ lib/                       turndown.js / turndown-plugin-gfm.js / marked.min.js
-├─ styles/styles.css          共享样式
-└─ icons/
-```
+| 快捷键 | 操作 |
+| --- | --- |
+| `Alt+Shift+M` | 转换当前页面 |
+| `Alt+Shift+S` | 转换当前文字选区 |
 
-### 批量转换数据流
+快捷键也可在浏览器的扩展快捷键设置中修改。
 
-```
-popup「批量转换选区链接」──START_BATCH_PICKER──> background 在源页面注入 startLinkPickerInPage
-用户框选并点击区域 ──LINKS_PICKED/LINKS_PICKER_DONE──> background 暂存链接
-background 打开 batch.html?tabId ──读 pickedLinksForTab_<tabId>──> 预填清单
-（备选）右键选区 ──OPEN_BATCH──> batch.html ──GET_SELECTION_LINKS──> content.js 读取 window.getSelection()
-batch.html 展示清单 ──(端口 START: urls, mode)──> background
-background 对每个 url：fetch(跨域，凭 host_permissions) ──CONVERT_HTML──> offscreen
-offscreen：DOMParser 解析 → 识别正文 → Turndown 转 Markdown → 返回
-background 经端口回传 PROGRESS / DONE
-batch.html：分别下载(blob) 或 合并下载(blob) + 预览(marked)
-```
+### 批量转换
 
-- 跨域抓取在 **background service worker** 中进行（MV3 下扩展凭 `host_permissions: <all_urls>` 可跨域 fetch）。
-- HTML→Markdown 在 **offscreen document** 中进行（service worker 无 `DOMParser`，离屏文档有完整 DOM，并加载 Turndown）。
-- 并发抓取（默认 4，可调），单条失败不影响其它，进度实时回传。
+1. 点击扩展图标 →「批量转换选区链接」。
+2. 在网页上点击包含链接的区域，可连续拾取；按 Esc 或右键完成。
+3. 扩展打开批量页并预填链接，勾选需要转换的条目。
+4. 如需补充链接，点击「框选区域拾取」；如需展开目录，点击「展开已选目录」。
+5. 选择分别下载或合并，设置来源信息、图片保留和自动下载选项。
+6. 点击「开始批量转换」，查看每条链接的进度和结果。
+7. 完成后下载结果；合并模式还支持预览和复制。
+
+也可以先选中含链接的正文，再通过右键菜单直接进入批量页。
+
+### 图片与 ZIP
+
+「图片打包」默认开启，可在弹窗或批量页关闭。开启时，下载 ZIP 包含 Markdown 与 `images/` 下的图片，并改写相应链接；获取失败的图片保留原始远程地址。关闭时下载 Markdown 文件。
+
+批量页可选择保留所有图片，包括图标和装饰图片。合并或分别输出时，扩展会在同一批次中对图片去重。
+
+## 设置
+
+所有持久化设置使用 `chrome.storage.local` 保存在当前浏览器配置文件中，不依赖云同步。
+
+| 设置 | 默认值 | 说明 |
+| --- | --- | --- |
+| 选区浮窗 | 开启 | 选中文字后显示「生成 Markdown」，可随时关闭 |
+| 网页解锁 | 开启 | 允许常见受限网页选中、复制和使用右键 |
+| 图片打包 | 开启 | 下载时将 Markdown 和图片保存为 ZIP |
+| 背景模式 | 跟随系统 | 可固定为浅色或深色 |
+| 主题色 | 蓝色 `#2563EB` | 可选蓝色、青绿、紫色、玫红、琥珀、石墨或自定义颜色 |
+
+主题与背景设置即时同步到已打开的扩展弹窗、预览页、批量页和网页选区浮窗。关闭选区浮窗会立即隐藏按钮。网页本身的主题不会被改变。
 
 ## 说明与限制
 
-- 部分站点可能因反爬、需登录、或返回非 HTML（PDF/图片等）导致抓取失败，会在列表中标记为失败。
-- 相对链接/图片地址会按页面 URL 解析为绝对地址。
-- 抓取时默认携带目标站点 Cookie（`credentials: include`），便于获取登录后可见的内容。
-- 批量转换会先用 fetch 抓取服务端 HTML（快）；若内容过短（多为 JS 动态渲染的空壳页面），自动回退到在隐藏标签页中渲染页面后再转换，结果与「单独转换」一致（会短暂出现后台标签页）。
-- 框选/选区识别链接已增强：除标准 `<a href>` 外，还会向上查找祖先 `<a>`（点中的常是链接内部的按钮/图标/文字）、识别 `data-href`/`data-url`/`data-route` 等自定义链接属性，以及 `title`/`aria-label`/内联事件中内嵌的 URL（即「鼠标悬停显示链接」的内部平台场景）。
-- 翻译 Key 只保存在本机的 `chrome.storage.local`，不会写入项目文件或随扩展分发。网页正文会发送到用户配置的 Azure Translator；请勿在不受信任的共享设备上保存个人 Key。
+- 浏览器内置页、扩展页和受平台保护的页面不能注入网页脚本。
+- 浮窗不处理输入框、文本域或可编辑区域中的选区。
+- 网页解锁覆盖常见 CSS 与事件限制，不保证所有网站或课件都能选中；图片、扫描件和 Canvas 文字需要 OCR，本扩展不提供 OCR。
+- 批量抓取可能受登录状态、反爬或非 HTML 内容影响，失败会显示在结果列表中。
+- 抓取默认携带目标站点 Cookie，以读取用户有权访问的登录内容。
+- 动态网页抓取到空壳内容时，扩展会尝试在后台标签页中渲染后转换。
+- 相对链接和图片地址会按原网页地址解析；复杂排版在 Markdown 中可能简化。
 
-## 第三方库
+## 开发
 
-- [Readability](https://github.com/mozilla/readability)（Apache-2.0）— 正文提取（Firefox 阅读模式引擎）
-- [Turndown](https://github.com/mixmark-io/turndown)（MIT）— HTML → Markdown
-- [turndown-plugin-gfm](https://github.com/mixmark-io/turndown-plugin-gfm)（MIT）— 表格/任务列表
-- [marked](https://github.com/markedjs/marked)（MIT）— Markdown → HTML 预览
+主要结构：
+
+```text
+manifest.json              扩展入口、权限、快捷键
+background/                转换结果处理、批量编排、下载
+content/                   网页解锁、选区浮窗、元素拾取
+popup/                     工具栏弹窗与本地偏好设置
+preview/                   单次转换预览与下载
+batch/                     链接清单、目录展开、批量进度与结果
+offscreen/                 离屏 HTML 解析与 Markdown 转换
+utils/converter.js         正文提取与 Markdown 转换
+utils/selectionFeature.js  选区资格、定位与解锁控制器
+utils/theme.js             主题色、背景模式与跨页面同步
+utils/imageBundle.js       图片抓取、去重与 ZIP 打包
+styles/                    共享界面样式
+icons/                     SVG Logo 与 16 / 48 / 128 像素图标
+scripts/build-icons.ps1    Windows 图标生成脚本
+tests/                     Node.js 回归测试
+```
+
+正文识别依次使用 Mozilla Readability、语义元素和评分策略。跨域抓取由后台服务工作者处理，HTML 解析通过 MV3 离屏文档完成。
+
+### 检查与测试
+
+使用支持 `node:test` 的 Node.js：
+
+```sh
+node --test tests/*.test.js
+node --check background/background.js
+node --check content/content.js
+node --check popup/popup.js
+node --check utils/theme.js
+git diff --check
+```
+
+Windows 下重新生成 PNG 图标：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-icons.ps1
+```
+
+界面修改后应重新加载扩展，并验证主题持久化、系统深浅色切换、浮窗开关，以及页面、选区和批量转换。浏览器验证产生的临时配置与截图目录已加入 Git 忽略规则。
+
+## 第三方组件
+
+- [Mozilla Readability](https://github.com/mozilla/readability)：正文提取。
+- [Turndown](https://github.com/mixmark-io/turndown)：HTML 转 Markdown。
+- [turndown-plugin-gfm](https://github.com/mixmark-io/turndown-plugin-gfm)：表格、任务列表等扩展语法。
+- [marked](https://github.com/markedjs/marked)：Markdown 预览。
+- [JSZip](https://github.com/Stuk/jszip)：Markdown 与图片压缩打包。

@@ -5,47 +5,66 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>网页转 Markdown</title>
   <link rel="stylesheet" href="../styles/styles.css">
+  <script src="../utils/theme.js"></script>
 </head>
 <body class="popup-body">
   <div class="popup">
     <header class="popup-header">
-      <img src="../icons/icon48.png" alt="logo" class="logo" />
+      <svg class="logo brand-logo" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="12" fill="currentColor"/><path d="M14 12h14l6 6v18H14z" fill="none" stroke="var(--on-primary)" stroke-width="2" stroke-linejoin="round"/><path d="M28 12v6h6M19 29v-7l4 4 4-4v7M31 25v6m-2-2 2 2 2-2" fill="none" stroke="var(--on-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <div>
         <h1>网页转 Markdown</h1>
-        <p class="subtitle">单页 / 选定区域 / 批量链接</p>
+        <p class="subtitle">把网页，变成可留存的笔记。</p>
       </div>
     </header>
 
     <div class="actions">
       <button id="btn-page" class="btn btn-primary">
-        <span class="icon">📄</span>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6v18h12V7zM14 3v4h4M9 12h6M9 16h6"/></svg>
         <span class="label">转换当前页面</span>
+        <span class="action-hint">整页正文</span>
       </button>
       <button id="btn-selection" class="btn">
-        <span class="icon">✂️</span>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5M9 9h6v6H9z"/></svg>
         <span class="label">转换选定区域</span>
+        <span class="action-hint">点击拾取</span>
       </button>
       <button id="btn-batch" class="btn btn-accent">
-        <span class="icon">📦</span>
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5zM3 12l9 5 9-5M3 16l9 5 9-5"/></svg>
         <span class="label">批量转换选区链接</span>
-        <span class="badge">先框选区域</span>
+        <span class="action-hint">多篇文档</span>
       </button>
     </div>
 
-    <label class="check popup-check popup-check-primary">
+    <div class="popup-section">
+    <p class="section-label">偏好设置</p>
+    <label class="check popup-check">
+      <input type="checkbox" id="selection-floating" checked />
+      <span>选区浮窗<small>选中文字后显示「生成 Markdown」</small></span>
+    </label>
+    <label class="check popup-check">
       <input type="checkbox" id="unlock-selection" checked />
-      <span>解除网页选中、复制和右键限制</span>
+      <span>网页解锁<small>允许选中、复制与右键</small></span>
     </label>
 
     <label class="check popup-check">
       <input type="checkbox" id="bundle-images" checked />
-      <span>打包为 ZIP（Markdown + 图片，单次下载）</span>
+      <span>图片打包<small>Markdown 与图片一起保存为 ZIP</small></span>
     </label>
+    </div>
 
-    <button id="translation-settings" class="btn popup-settings-btn" type="button">
-      <span class="icon">🌐</span>
-      <span class="label">翻译设置</span>
-    </button>
+    <section class="theme-section" aria-labelledby="theme-label">
+      <div class="theme-heading"><h2 class="section-label">背景模式</h2></div>
+      <div class="mode-picker" role="group" aria-label="背景模式">
+        <button type="button" data-mode="system" aria-pressed="true">跟随系统</button>
+        <button type="button" data-mode="light" aria-pressed="false">浅色</button>
+        <button type="button" data-mode="dark" aria-pressed="false">深色</button>
+      </div>
+      <div class="theme-heading"><h2 id="theme-label" class="section-label">主题色</h2><span id="theme-value" class="theme-value">#2563EB</span></div>
+      <div class="theme-picker">
+        <div id="theme-presets" class="theme-presets" role="group" aria-label="预设主题色"></div>
+        <label class="custom-color" title="自定义主题色"><input id="theme-custom" type="color" value="#2563eb" aria-label="自定义主题色"><span>自定义</span></label>
+      </div>
+    </section>
 
     <footer class="popup-footer">
       <span id="status" class="status status-ready">就绪</span>

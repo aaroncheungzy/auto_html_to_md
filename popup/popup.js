@@ -54,13 +54,46 @@
     setTimeout(() => window.close(), 300);
   });
 
-  $('translation-settings').addEventListener('click', async () => {
-    await chrome.runtime.openOptionsPage();
-    window.close();
+  const themeButtons = window.AppTheme.PRESETS.map(([color, label]) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'theme-swatch';
+    button.style.setProperty('--swatch', color);
+    button.setAttribute('aria-label', label);
+    button.title = label;
+    button.addEventListener('click', () => saveTheme(color));
+    $('theme-presets').appendChild(button);
+    return { button, color };
   });
+  window.AppTheme.subscribe((color, mode) => {
+    $('theme-custom').value = color;
+    $('theme-value').textContent = color.toUpperCase();
+    themeButtons.forEach((item) => item.button.setAttribute('aria-pressed', String(item.color === color)));
+    document.querySelectorAll('[data-mode]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.mode === mode)));
+  });
+  document.querySelectorAll('[data-mode]').forEach((button) => button.addEventListener('click', async () => {
+    try { await window.AppTheme.saveMode(button.dataset.mode); setStatus('背景模式已保存', 'status-ok'); }
+    catch (_) { setStatus('保存背景模式失败', 'status-err'); }
+  }));
+  async function saveTheme(color) {
+    try { await window.AppTheme.save(color); setStatus('主题色已保存', 'status-ok'); }
+    catch (_) { setStatus('保存主题色失败', 'status-err'); }
+  }
+  $('theme-custom').addEventListener('input', (event) => window.AppTheme.apply(document.documentElement, event.target.value));
+  $('theme-custom').addEventListener('change', (event) => saveTheme(event.target.value));
 
   document.addEventListener('DOMContentLoaded', async () => {
     $('version').textContent = 'v' + chrome.runtime.getManifest().version;
+    const floating = $('selection-floating');
+    const { settings: initialSettings } = await chrome.storage.local.get(['settings']);
+    floating.checked = !initialSettings || initialSettings.selectionFloating !== false;
+    floating.addEventListener('change', async () => {
+      try {
+        const { settings } = await chrome.storage.local.get(['settings']);
+        await chrome.storage.local.set({ settings: { ...settings, selectionFloating: floating.checked } });
+        setStatus(floating.checked ? '选区浮窗已开启' : '选区浮窗已关闭', 'status-ok');
+      } catch (_) { setStatus('保存浮窗设置失败', 'status-err'); }
+    });
     // 初始化全局网页解锁开关（缺失时默认开启）
     const unlock = $('unlock-selection');
     try {
@@ -79,7 +112,7 @@
     const cb = $('bundle-images');
     try {
       const { settings } = await chrome.storage.local.get(['settings']);
-      cb.checked = settings && settings.bundleImages !== false; // 默认开
+      cb.checked = !settings || settings.bundleImages !== false; // 默认开
     } catch (_) { cb.checked = true; }
     cb.addEventListener('change', async () => {
       try {

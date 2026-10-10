@@ -56,95 +56,79 @@
     let host = null;
     let shadow = null;
     let markdownButton = null;
-    let translateButton = null;
-    let resultPanel = null;
-    let resultMeta = null;
-    let resultText = null;
     let savedRange = null;
     let selecting = false;
     let updateTimer = null;
     let busy = false;
+    let themeColor = '#2563eb';
+    let themeMode = 'system';
+    let systemDark = false;
+    let floatingEnabled = true;
+    let settingsRevision = 0;
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.settings) {
+        settingsRevision++;
+        floatingEnabled = !changes.settings.newValue || changes.settings.newValue.selectionFloating !== false;
+        if (!floatingEnabled) hide();
+      }
+    });
+    chrome.storage.local.get(['settings']).then(({ settings }) => {
+      if (!settingsRevision) {
+        floatingEnabled = !settings || settings.selectionFloating !== false;
+        if (!floatingEnabled) hide();
+      }
+    }).catch(() => {});
+    if (window.AppTheme) window.AppTheme.subscribe((color, mode, dark) => {
+      themeColor = color;
+      themeMode = mode;
+      systemDark = dark;
+      if (host) {
+        window.AppTheme.apply(host, color);
+        window.AppTheme.applyMode(host, mode, dark);
+      }
+    });
 
     function ensureHost() {
       if (host && host.isConnected) return;
       host = document.createElement('div');
       host.id = 'auto-html-to-md-selection-action';
       host.style.cssText = 'position:fixed;display:none;z-index:2147483647;width:max-content;height:auto;pointer-events:auto;';
+      if (window.AppTheme) {
+        window.AppTheme.apply(host, themeColor);
+        window.AppTheme.applyMode(host, themeMode, systemDark);
+      }
       shadow = host.attachShadow({ mode: 'closed' });
       const style = document.createElement('style');
       style.textContent = `
         :host { all: initial; }
-        .wrap { max-width: min(420px, calc(100vw - 16px)); font: 14px/1.5 system-ui, sans-serif; color: #0f172a; }
-        .actions { display: flex; gap: 7px; justify-content: flex-end; }
         button {
           all: initial; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px;
-          height: 38px; padding: 0 13px; border: 1px solid #1d4ed8;
-          border-radius: 9px; background: #2563eb; color: #fff; cursor: pointer;
-          box-shadow: 0 8px 24px rgba(15,23,42,.24); font: 600 14px/1 system-ui, sans-serif;
+          height: 36px; padding: 0 13px; border: 1px solid #e2e8f0;
+          border-radius: 8px; background: #fff; color: #0f172a; cursor: pointer;
+          box-shadow: 0 4px 12px rgba(15,23,42,.16); font: 500 13px/1 system-ui, sans-serif;
           -webkit-user-select: none !important; user-select: none !important;
         }
-        button.secondary { border-color: #6d28d9; background: #7c3aed; }
-        button:hover { background: #1d4ed8; }
-        button.secondary:hover { background: #6d28d9; }
-        button:focus-visible { outline: 3px solid rgba(96,165,250,.55); outline-offset: 2px; }
+        button:hover { border-color: var(--primary, #2563eb); color: var(--primary, #2563eb); }
+        :host([data-theme="dark"]) button { background: #1e293b; color: #f1f5f9; border-color: #475569; }
+        :host([data-theme="dark"]) button:hover { border-color: var(--primary, #2563eb); }
+        button:focus-visible { outline: 2px solid var(--primary, #2563eb); outline-offset: 3px; }
         button:disabled { opacity: .72; cursor: wait; }
-        .result { display: none; width: 380px; max-width: calc(100vw - 16px); margin-top: 8px; padding: 12px;
-          border: 1px solid #dbeafe; border-radius: 10px; background: #fff; box-shadow: 0 12px 30px rgba(15,23,42,.2); }
-        .result.visible { display: block; }
-        .meta { color: #64748b; font-size: 12px; margin-bottom: 6px; }
-        .text { max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere;
-          -webkit-user-select: text !important; user-select: text !important; }
-        .result-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
-        .result-actions button { height: 30px; padding: 0 10px; box-shadow: none; font-size: 12px; }
-        .result-actions .close { color: #334155; background: #f8fafc; border-color: #cbd5e1; }
       `;
-      const wrap = document.createElement('div');
-      wrap.className = 'wrap';
-      const actions = document.createElement('div');
-      actions.className = 'actions';
       markdownButton = document.createElement('button');
       markdownButton.type = 'button';
       markdownButton.textContent = '生成 Markdown';
-      translateButton = document.createElement('button');
-      translateButton.type = 'button';
-      translateButton.className = 'secondary';
-      translateButton.textContent = '翻译';
-      [markdownButton, translateButton].forEach((actionButton) => actionButton.addEventListener('pointerdown', (event) => {
+      markdownButton.addEventListener('pointerdown', (event) => {
         event.preventDefault();
         event.stopPropagation();
-      }));
+      });
       markdownButton.addEventListener('click', generate);
-      translateButton.addEventListener('click', translate);
-      actions.append(markdownButton, translateButton);
-
-      resultPanel = document.createElement('div');
-      resultPanel.className = 'result';
-      resultMeta = document.createElement('div');
-      resultMeta.className = 'meta';
-      resultText = document.createElement('div');
-      resultText.className = 'text';
-      const resultActions = document.createElement('div');
-      resultActions.className = 'result-actions';
-      const copyButton = document.createElement('button');
-      copyButton.type = 'button';
-      copyButton.textContent = '复制译文';
-      copyButton.addEventListener('click', () => copyToClipboard(resultText.textContent || ''));
-      const closeButton = document.createElement('button');
-      closeButton.type = 'button';
-      closeButton.className = 'close';
-      closeButton.textContent = '关闭';
-      closeButton.addEventListener('click', hide);
-      resultActions.append(copyButton, closeButton);
-      resultPanel.append(resultMeta, resultText, resultActions);
-      wrap.append(actions, resultPanel);
-      shadow.append(style, wrap);
+      shadow.append(style, markdownButton);
       document.documentElement.appendChild(host);
     }
 
     function hide() {
       if (host) host.style.display = 'none';
       if (!busy) savedRange = null;
-      if (resultPanel) resultPanel.classList.remove('visible');
     }
 
     function isInsideAction(selection) {
@@ -155,6 +139,7 @@
 
     function update() {
       updateTimer = null;
+      if (!floatingEnabled || document.documentElement.hasAttribute('data-auto-html-to-md-picker-active')) { hide(); return; }
       if (selecting || picker.active) return;
       const selection = window.getSelection();
       if (!window.SelectionFeature.isEligibleSelection(selection) || isInsideAction(selection)) {
@@ -172,7 +157,6 @@
       savedRange = range.cloneRange();
       ensureHost();
       host.style.display = 'block';
-      if (resultPanel) resultPanel.classList.remove('visible');
       const size = host.getBoundingClientRect();
       const pos = window.SelectionFeature.positionFloatingButton(
         rect,
@@ -194,7 +178,6 @@
       if (busy || !savedRange) return;
       busy = true;
       markdownButton.disabled = true;
-      translateButton.disabled = true;
       markdownButton.textContent = '生成中…';
       try {
         await applyConverterSettings();
@@ -214,45 +197,8 @@
         savedRange = null;
         if (markdownButton) {
           markdownButton.disabled = false;
-          translateButton.disabled = false;
           markdownButton.textContent = '生成 Markdown';
         }
-      }
-    }
-
-    async function translate() {
-      if (busy || !savedRange) return;
-      const text = savedRange.toString().trim();
-      if (!text) return;
-      busy = true;
-      markdownButton.disabled = true;
-      translateButton.disabled = true;
-      translateButton.textContent = '翻译中…';
-      try {
-        const res = await chrome.runtime.sendMessage({ type: 'TRANSLATE_SELECTION', data: { text } });
-        if (!res || !res.success) {
-          const error = new Error((res && res.error) || '翻译失败');
-          error.code = res && res.code;
-          throw error;
-        }
-        resultText.textContent = res.data.translatedText;
-        resultMeta.textContent = `${res.data.sourceLanguage || 'auto'} → ${res.data.targetLanguage}`;
-        resultPanel.classList.add('visible');
-        const bounds = host.getBoundingClientRect();
-        if (bounds.right > window.innerWidth - 8) host.style.left = `${Math.max(8, window.innerWidth - bounds.width - 8)}px`;
-        if (bounds.bottom > window.innerHeight - 8) host.style.top = `${Math.max(8, window.innerHeight - bounds.height - 8)}px`;
-      } catch (err) {
-        if (err.code === 'CONFIG_REQUIRED') {
-          await chrome.runtime.sendMessage({ type: 'OPEN_TRANSLATION_OPTIONS' });
-          toast('请先填写 Azure Translator Key', true);
-        } else {
-          toast('翻译失败：' + (err.message || String(err)), true);
-        }
-      } finally {
-        busy = false;
-        markdownButton.disabled = false;
-        translateButton.disabled = false;
-        translateButton.textContent = '翻译';
       }
     }
 

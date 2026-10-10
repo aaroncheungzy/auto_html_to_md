@@ -45,7 +45,7 @@
   }
 
   $('btn-copy').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(markdown); $('btn-copy').textContent = '✓ 已复制'; setTimeout(() => $('btn-copy').textContent = '📋 复制', 1500); }
+    try { await navigator.clipboard.writeText(markdown); $('btn-copy').textContent = '已复制'; setTimeout(() => $('btn-copy').textContent = '复制', 1500); }
     catch (e) { alert('复制失败：' + e.message); }
   });
   $('btn-download').addEventListener('click', async () => {

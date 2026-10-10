@@ -1,2 +1,6 @@
 # Tool internals / local memory
 .workbuddy/
+
+# Local browser verification artifacts and temporary profiles
+.playwright-cli/
+output/playwright/

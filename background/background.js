@@ -1,4 +1,4 @@
-importScripts('../utils/htmlQuality.js', '../utils/translation.js');
+importScripts('../utils/htmlQuality.js');
 
 /* background/background.js
  * MV3 service worker：菜单/快捷键、单页与选区转换、批量抓取+转换编排、下载。
@@ -14,14 +14,11 @@ importScripts('../utils/htmlQuality.js', '../utils/translation.js');
     keepAllImages: false,
     bundleImages: true,
     unlockSelection: true,
-    translationProvider: 'azure',
-    translationApiKey: '',
-    translationRegion: '',
-    translationChineseTarget: 'en',
-    translationOtherTarget: 'zh-Hans'
+    selectionFloating: true
   };
 
   const INJECT_FILES = [
+    'utils/theme.js',
     'lib/turndown.js',
     'lib/turndown-plugin-gfm.js',
     'utils/textBlockStructure.js',
@@ -605,12 +602,6 @@ importScripts('../utils/htmlQuality.js', '../utils/translation.js');
     await handleConversionResult(tab, md, 'selection');
   }
 
-  async function translateSelection(data) {
-    const text = data && data.text;
-    const settings = await getSettings();
-    return globalThis.TranslationFeature.translateWithAzure(text, settings);
-  }
-
   /* ---------------- 批量转换：端口协议 ---------------- */
   // page -> bg: { type:'START', data:{ urls, mode, addSourceInfo, concurrency, timeoutMs } }
   // bg -> page: { type:'PROGRESS', data:{ index, total, url, status, title?, markdown?, error? } }
@@ -738,14 +729,6 @@ importScripts('../utils/htmlQuality.js', '../utils/translation.js');
           }
           case 'FLOATING_SELECTION_CONVERTED': {
             await handleFloatingSelection(sender.tab, msg.data);
-            sendResponse({ success: true }); break;
-          }
-          case 'TRANSLATE_SELECTION': {
-            const data = await translateSelection(msg.data);
-            sendResponse({ success: true, data }); break;
-          }
-          case 'OPEN_TRANSLATION_OPTIONS': {
-            await chrome.runtime.openOptionsPage();
             sendResponse({ success: true }); break;
           }
           case 'START_ELEMENT_PICKER': {
