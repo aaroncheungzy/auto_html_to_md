@@ -451,40 +451,15 @@
   });
   document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => switchTab(t.dataset.tab)));
 
-  /* ---------- 保留图片 / 打包图片 开关（持久化到 settings） ---------- */
-  async function initKeepImagesCheckbox() {
-    const cb = $('keep-images');
-    try {
-      const { settings } = await chrome.storage.local.get(['settings']);
-      cb.checked = !!(settings && settings.keepAllImages);
-    } catch (_) { cb.checked = false; }
-    cb.addEventListener('change', async () => {
-      try {
-        const { settings } = await chrome.storage.local.get(['settings']);
-        await chrome.storage.local.set({ settings: { ...settings, keepAllImages: cb.checked } });
-      } catch (_) {}
-    });
-  }
-
-  async function initBundleCheckbox() {
-    const cb = $('bundle-images');
-    if (!cb) return;
-    try {
-      const { settings } = await chrome.storage.local.get(['settings']);
-      cb.checked = settings && settings.bundleImages !== false; // 默认开
-    } catch (_) { cb.checked = true; }
-    cb.addEventListener('change', async () => {
-      try {
-        const { settings } = await chrome.storage.local.get(['settings']);
-        await chrome.storage.local.set({ settings: { ...settings, bundleImages: cb.checked } });
-      } catch (_) {}
-    });
-  }
-
   document.addEventListener('DOMContentLoaded', async () => {
     try { const t = await chrome.tabs.getCurrent(); if (t) myTabId = t.id; } catch (_) {}
-    initKeepImagesCheckbox();
-    initBundleCheckbox();
+    await window.ImageSettings.bind($('bundle-images'), $('keep-images'), chrome.storage,
+      (message, failed) => {
+        if (failed) { $('picker-status').hidden = false; $('picker-status').textContent = message; }
+      }, async (patch) => {
+        const result = await chrome.runtime.sendMessage({ type: 'UPDATE_IMAGE_SETTINGS', payload: patch });
+        if (!result?.success) throw new Error(result?.error || '保存失败');
+      });
     await loadLinks();
   });
 })();

@@ -380,7 +380,7 @@
   async function applyConverterSettings() {
     try {
       const { settings } = await chrome.storage.local.get(['settings']);
-      window.converter.keepAllImages = !!(settings && settings.keepAllImages);
+      window.converter.keepAllImages = window.ImageSettings.read(settings).effectiveDecorative;
     } catch (_) {
       window.converter.keepAllImages = false;
     }

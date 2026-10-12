@@ -108,18 +108,12 @@
       } catch (_) { setStatus('保存解锁设置失败', 'status-err'); }
     });
 
-    // 初始化"打包图片到本地"开关
-    const cb = $('bundle-images');
-    try {
-      const { settings } = await chrome.storage.local.get(['settings']);
-      cb.checked = !settings || settings.bundleImages !== false; // 默认开
-    } catch (_) { cb.checked = true; }
-    cb.addEventListener('change', async () => {
-      try {
-        const { settings } = await chrome.storage.local.get(['settings']);
-        await chrome.storage.local.set({ settings: { ...settings, bundleImages: cb.checked } });
-      } catch (_) {}
-    });
+    await window.ImageSettings.bind($('bundle-images'), $('keep-images'), chrome.storage,
+      (message, failed) => setStatus(message, failed ? 'status-err' : 'status-ok'),
+      async (patch) => {
+        const result = await chrome.runtime.sendMessage({ type: 'UPDATE_IMAGE_SETTINGS', payload: patch });
+        if (!result?.success) throw new Error(result?.error || '保存失败');
+      });
     setStatus('就绪', 'status-ready');
   });
 })();

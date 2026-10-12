@@ -1,4 +1,4 @@
-importScripts('../utils/htmlQuality.js');
+importScripts('../utils/htmlQuality.js', '../utils/imageSettings.js');
 
 /* background/background.js
  * MV3 service worker：菜单/快捷键、单页与选区转换、批量抓取+转换编排、下载。
@@ -19,6 +19,7 @@ importScripts('../utils/htmlQuality.js');
 
   const INJECT_FILES = [
     'utils/theme.js',
+    'utils/imageSettings.js',
     'lib/turndown.js',
     'lib/turndown-plugin-gfm.js',
     'utils/textBlockStructure.js',
@@ -29,6 +30,7 @@ importScripts('../utils/htmlQuality.js');
   ];
 
   let offscreenReady = false;
+  const updateImageSettings = ImageSettings.createUpdater(chrome.storage);
   let pendingBatchTab = null; // 批量"先选区再跳转"流程中，待跳转的源页面 tabId
   function safePost(port, msg) { try { port.postMessage(msg); } catch (_) { /* port may be closed */ } }
 
@@ -802,6 +804,14 @@ importScripts('../utils/htmlQuality.js');
           case 'GET_SETTINGS': {
             const s = await getSettings();
             sendResponse({ success: true, data: { settings: s } }); break;
+          }
+          case 'UPDATE_IMAGE_SETTINGS': {
+            const patch = msg.payload || {};
+            if (Object.keys(patch).some(key => !['bundleImages', 'keepAllImages'].includes(key) || typeof patch[key] !== 'boolean')) {
+              throw new Error('无效的图片设置');
+            }
+            await updateImageSettings(patch);
+            sendResponse({ success: true }); break;
           }
           case 'SAVE_SETTINGS':
             await chrome.storage.local.set({ settings: msg.payload.settings });

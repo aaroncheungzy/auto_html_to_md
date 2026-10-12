@@ -56,19 +56,19 @@ body {
 
 /* ---------- 弹窗 ---------- */
 .popup-body { width: 360px; background: var(--card); }
-.popup { padding: 18px; }
-.popup-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.popup { padding: 14px; }
+.popup-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .popup-header .logo { width: 42px; height: 42px; flex-shrink: 0; }
 .brand-logo { color: var(--primary); }
 .popup-header h1 { font-size: 17px; font-weight: 650; letter-spacing: -.4px; margin: 0; }
 .popup-header .subtitle { font-size: 11px; color: var(--muted); margin: 5px 0 0; }
 .actions { display: flex; flex-direction: column; gap: 8px; }
-.actions .btn { width: 100%; justify-content: flex-start; padding: 10px 12px; gap: 12px; }
+.actions .btn { width: 100%; justify-content: flex-start; padding: 8px 12px; gap: 12px; }
 .actions .btn-accent { background: var(--card); color: var(--text); border-color: var(--border); }
 .actions .btn-accent:hover { background: var(--hover); }
 .actions svg.icon { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .action-hint { margin-left: auto; font-size: 11px; opacity: .65; font-weight: 400; }
-.popup-section { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 12px; }
+.popup-section { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
 .section-label { margin: 0; font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .5px; }
 .popup-check { display: flex; align-items: center; gap: 11px; margin-top: 10px; font-size: 13px; color: var(--text); cursor: pointer; }
 .popup-check small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); margin-top: 2px; }
@@ -83,7 +83,7 @@ body {
 }
 .secondary { margin-top: 8px; text-align: center; }
 .popup-footer {
-  margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border);
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center; font-size: 12px;
 }
 .status::before { content: "● "; }
@@ -122,6 +122,19 @@ body {
 .options { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
 .check, .radio { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .check input, .radio input { width: 16px; height: 16px; }
+.setting-row { display: flex; align-items: center; gap: 8px; }
+.action-help-group { display: inline-flex; align-items: center; gap: 2px; }
+.setting-row > label { flex: 1; min-width: 0; }
+.setting-child { margin-left: 24px; border-left: 2px solid var(--border); padding-left: 10px; }
+.setting-child.is-disabled label { color: var(--muted); cursor: not-allowed; }
+.setting-child.is-disabled input { cursor: not-allowed; }
+.setting-help { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 2px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: help; flex-shrink: 0; vertical-align: middle; }
+.setting-help:hover, .setting-help:focus-visible { color: var(--primary); background: var(--hover); }
+.setting-help svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.section-label .setting-help { margin-left: 4px; }
+.setting-tooltip { position: fixed; z-index: 10000; width: max-content; max-width: min(300px, calc(100vw - 16px)); padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); box-shadow: 0 4px 18px #00000026; font-size: 12px; line-height: 1.6; pointer-events: none; }
+.popup .setting-row { margin-top: 6px; }
+.popup .setting-row .popup-check { margin-top: 0; }
 
 /* ---------- 进度 ---------- */
 .progress-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
@@ -186,8 +199,8 @@ body {
 
 input[type="checkbox"], input[type="radio"] { accent-color: var(--primary); }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
-.theme-section { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 12px; }
-.theme-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.theme-section { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
+.theme-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .theme-value { color: var(--muted); font: 10px Consolas, monospace; }
 .theme-picker, .theme-presets { display: flex; align-items: center; gap: 8px; }
 .theme-picker { justify-content: space-between; }

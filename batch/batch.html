@@ -20,9 +20,9 @@
         <h2>第 1 步：选择要转换的链接</h2>
         <div class="card-actions">
           <label class="check"><input type="checkbox" id="select-all" checked /> 全选</label>
-          <button id="btn-refresh" class="link-btn">重新读取选区</button>
-          <button id="btn-pick" class="link-btn">框选区域拾取</button>
-          <button id="btn-expand" class="link-btn">展开已选目录</button>
+          <button id="btn-refresh" class="link-btn" data-help="先回到原网页重新选中包含链接的内容，再点击此按钮读取其中的链接。重新读取会替换当前链接清单，请重新确认需要转换的条目。">重新读取选区</button>
+          <button id="btn-pick" class="link-btn" data-help="切回原网页，移动鼠标并点击包含链接的区域，可连续点击多个区域。拾取的链接会去重追加到当前清单；完成后按 Esc 或右键，返回批量页确认条目。">框选区域拾取</button>
+          <button id="btn-expand" class="link-btn" data-help="先勾选目录链接，再收集同域且严格位于该目录路径下的一层子链接，去重追加到当前清单，最多 100 个链接。不递归展开；展开后请确认勾选需要转换的条目，再开始转换。">展开已选目录</button>
         </div>
       </div>
       <div id="link-list" class="link-list"></div>
@@ -39,15 +39,16 @@
     <section id="step-options" class="card">
       <h2>第 2 步：输出方式</h2>
       <div class="options">
-        <label class="radio"><input type="radio" name="mode" value="separate" checked /> <span><b>分别下载</b> - 每个链接一个 .md 文件</span></label>
-        <label class="radio"><input type="radio" name="mode" value="combined" /> <span><b>合并为一个文件</b> - 所有内容合并后下载单个 .md</span></label>
+        <label class="radio" data-help="每个链接单独输出 Markdown；开启下载图片时，每篇输出包含 Markdown 和图片的 ZIP。"><input type="radio" name="mode" value="separate" checked /> <span><b>分别下载</b> - 每个链接一份文件</span></label>
+        <label class="radio" data-help="把本批次成功转换的内容合并为一份 Markdown；开启下载图片时，输出一个包含合并内容和图片的 ZIP。"><input type="radio" name="mode" value="combined" /> <span><b>合并为一个文件</b> - 所有内容合并后下载</span></label>
       </div>
       <div class="options" style="margin-top:12px">
-        <span class="muted">目录展开：仅同域且严格位于目录路径下，展开一层，最多 100 个链接。</span>
-        <label class="check"><input type="checkbox" id="add-source" checked /> 每篇添加标题与来源链接</label>
-        <label class="check"><input type="checkbox" id="auto-download" /> 完成后自动下载（合并模式自动下载合并文件）</label>
-        <label class="check"><input type="checkbox" id="keep-images" /> 保留所有图片（含图标/装饰）</label>
-        <label class="check"><input type="checkbox" id="bundle-images" checked /> 打包为 ZIP（Markdown + 图片，单次下载）</label>
+        <label class="check" data-help="在每篇转换结果前添加原网页标题和来源链接，方便追溯。此项用于当前批次。"><input type="checkbox" id="add-source" checked /> 每篇添加标题与来源链接</label>
+        <label class="check" data-help="转换完成后自动触发下载。分别模式逐篇下载，合并模式下载合并结果；关闭时可在结果区手动下载。此项用于当前批次。"><input type="checkbox" id="auto-download" /> 完成后自动下载</label>
+        <label class="check" data-help="开启后下载 ZIP，包含 Markdown 和成功获取的图片，链接改为本地相对路径。关闭后仅下载 Markdown，图片仍使用网络链接。获取失败的图片保留原网址。"><input type="checkbox" id="bundle-images" checked /> 下载图片并打包为 ZIP</label>
+        <div class="setting-child">
+          <label class="check" data-help="仅下载图片开启时生效。保留没有 alt（替代文字）和 title（标题）的图片，减少漏图，也可能包含图标和装饰。不包含 data: 内嵌图、CSS 背景图或正文提取已移除的图片。主开关关闭后会记住此选择，但暂不生效。"><input type="checkbox" id="keep-images" /> 包含图标／装饰图片</label>
+        </div>
       </div>
       <button id="btn-start" class="btn btn-accent" style="margin-top:14px;width:100%">
         <span class="icon">▶</span><span class="label">开始批量转换</span>
@@ -87,6 +88,8 @@
   <script src="../utils/imageBundle.js"></script>
   <script src="../utils/linkExpansion.js"></script>
   <script src="../utils/batchItems.js"></script>
+  <script src="../utils/imageSettings.js"></script>
+  <script src="../utils/settingsHelp.js"></script>
   <script src="batch.js"></script>
 </body>
 </html>

@@ -37,29 +37,35 @@
 
     <div class="popup-section">
     <p class="section-label">偏好设置</p>
-    <label class="check popup-check">
+    <label class="check popup-check" data-help="开启后，选中普通网页正文会出现「生成 Markdown」按钮。关闭后立即隐藏；输入框、文本域和可编辑区域不显示。">
       <input type="checkbox" id="selection-floating" checked />
       <span>选区浮窗<small>选中文字后显示「生成 Markdown」</small></span>
     </label>
-    <label class="check popup-check">
+    <label class="check popup-check" data-help="解除常见的文字选中、复制和右键限制。关闭后撤销扩展的解锁覆盖；浏览器受保护页面、图片和 Canvas 文字不适用。">
       <input type="checkbox" id="unlock-selection" checked />
       <span>网页解锁<small>允许选中、复制与右键</small></span>
     </label>
 
-    <label class="check popup-check">
+    <label class="check popup-check" data-help="开启后下载 ZIP，包含 Markdown 和成功获取的图片，链接改为本地相对路径。关闭后仅下载 Markdown，图片仍使用网络链接。获取失败的图片保留原网址。">
       <input type="checkbox" id="bundle-images" checked />
-      <span>图片打包<small>Markdown 与图片一起保存为 ZIP</small></span>
+      <span>下载图片并打包为 ZIP<small>关闭时仅下载 Markdown，保留图片网址</small></span>
     </label>
+    <div class="setting-child">
+      <label class="check popup-check" data-help="仅下载图片开启时生效。保留没有 alt（替代文字）和 title（标题）的图片，减少漏图，也可能包含图标和装饰。不包含 data: 内嵌图、CSS 背景图或正文提取已移除的图片。主开关关闭后会记住此选择，但暂不生效。">
+        <input type="checkbox" id="keep-images" />
+        <span>包含图标／装饰图片</span>
+      </label>
+    </div>
     </div>
 
     <section class="theme-section" aria-labelledby="theme-label">
-      <div class="theme-heading"><h2 class="section-label">背景模式</h2></div>
+      <div class="theme-heading"><h2 class="section-label" data-help="跟随系统会随系统浅色／深色设置自动切换，也可固定为浅色或深色。只改变扩展界面和选区浮窗，不改变网页主题。">背景模式</h2></div>
       <div class="mode-picker" role="group" aria-label="背景模式">
         <button type="button" data-mode="system" aria-pressed="true">跟随系统</button>
         <button type="button" data-mode="light" aria-pressed="false">浅色</button>
         <button type="button" data-mode="dark" aria-pressed="false">深色</button>
       </div>
-      <div class="theme-heading"><h2 id="theme-label" class="section-label">主题色</h2><span id="theme-value" class="theme-value">#2563EB</span></div>
+      <div class="theme-heading"><h2 id="theme-label" class="section-label" data-help="选择预设颜色或自定义颜色，应用到扩展按钮、选项及选区浮窗。颜色和背景模式在当前浏览器本地保存，并同步到已打开的扩展页面。">主题色</h2><span id="theme-value" class="theme-value">#2563EB</span></div>
       <div class="theme-picker">
         <div id="theme-presets" class="theme-presets" role="group" aria-label="预设主题色"></div>
         <label class="custom-color" title="自定义主题色"><input id="theme-custom" type="color" value="#2563eb" aria-label="自定义主题色"><span>自定义</span></label>
@@ -71,6 +77,8 @@
       <span class="version" id="version"></span>
     </footer>
   </div>
+  <script src="../utils/imageSettings.js"></script>
+  <script src="../utils/settingsHelp.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
